@@ -1,8 +1,9 @@
-# FastMap
+# 🌳 FastMap (임시)
 
-> 지금 내 주변에서 필요한 장소를 가장 빠르게 찾는 iOS 지도 앱
+> 지금 내 주변에서 '나에게 필요한 장소'를 가장 빠르게 찾는 iOS 지도 앱.
 
-FastMap은 현재 위치를 기준으로 화장실, 카페, 은행, 병원, 음식점, 약국, 편의점, 주차장 같은 주변 장소를 빠르게 탐색하는 SwiftUI 기반 iOS 앱입니다. 지도 위의 마커, 거리순 장소 목록, 도보 경로, 방향 정보, Live Activity를 한 화면 흐름 안에서 제공합니다.
+FastMap은 현재 위치를 기준으로 화장실, 카페, 은행, 병원, 음식점, 약국, 편의점, 주차장 같은 주변 장소를 빠르게 탐색하는 SwiftUI 기반 iOS 앱입니다.
+지도 위의 마커, 거리순 장소 목록, 도보 경로, 방향 정보, Live Activity를 한 화면 흐름 안에서 제공합니다.
 
 <p align="center">
   <img alt="Swift" src="https://img.shields.io/badge/Swift-6.0-F05138?style=flat-square&logo=swift&logoColor=white">
@@ -11,13 +12,13 @@ FastMap은 현재 위치를 기준으로 화장실, 카페, 은행, 병원, 음�
   <img alt="ActivityKit" src="https://img.shields.io/badge/ActivityKit-Live%20Activity-5856D6?style=flat-square&logo=apple&logoColor=white">
 </p>
 
-## 프로젝트 소개
+## 📌 프로젝트 소개
 
-길을 걷다가 "근처 화장실 어디 있지?", "가장 가까운 카페까지 얼마나 남았지?" 같은 순간이 자주 생깁니다. FastMap은 이런 짧고 급한 탐색을 위해 만들어진 앱입니다.
+길을 걷다가 "근처 화장실 어디 있지?", "가장 가까운 카페까지 얼마나 남았지?" 같은 순간이 자주 생깁니다. 그럴때 FastMap은 이런 짧고 급한 탐색을 위해 만들어진 앱입니다.
 
 앱을 열면 현재 위치 주변의 주요 장소를 카테고리별로 모아 보여주고, 선택한 장소까지의 거리와 방향을 직관적으로 확인할 수 있습니다. 장소를 선택하면 도보 경로가 지도 위에 표시되고, Live Activity와 Dynamic Island를 통해 앱 밖에서도 목적지 정보를 이어서 볼 수 있습니다.
 
-## 주요 기능
+## ✅ 주요 기능
 
 - 현재 위치 기반 주변 장소 탐색
 - 화장실, 카페, 은행, 병원, 음식점, 약국, 편의점, 주차장 카테고리 지원
@@ -28,7 +29,7 @@ FastMap은 현재 위치를 기준으로 화장실, 카페, 은행, 병원, 음�
 - Live Activity 및 Dynamic Island 위젯 지원
 - 위치 권한이 없을 때 서울시청 기준 미리보기 위치 제공
 
-## 화면 구성
+## 🔥 화면 구성
 
 | 주변 탐색 | 카테고리 설정 | Live Activity |
 | --- | --- | --- |
