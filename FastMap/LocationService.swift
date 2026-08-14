@@ -33,7 +33,8 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
     }
 
     func startEfficientUpdates() {
-        guard CLLocationManager.locationServicesEnabled() else { return }
+        guard manager.authorizationStatus == .authorizedAlways
+            || manager.authorizationStatus == .authorizedWhenInUse else { return }
         manager.startUpdatingLocation()
         if CLLocationManager.headingAvailable() {
             manager.startUpdatingHeading()

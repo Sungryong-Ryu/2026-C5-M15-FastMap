@@ -74,7 +74,10 @@ final class FastMapStore: ObservableObject {
         }
 
         let request = MKDirections.Request()
-        request.source = MKMapItem(placemark: MKPlacemark(coordinate: location))
+        request.source = MKMapItem(
+            location: CLLocation(latitude: location.latitude, longitude: location.longitude),
+            address: nil
+        )
         request.destination = selectedPlace.mapItem
         request.transportType = .walking
 
