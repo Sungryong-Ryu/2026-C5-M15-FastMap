@@ -13,39 +13,27 @@ struct ContentView: View {
     @EnvironmentObject private var liveActivityController: LiveActivityController
 
     var body: some View {
-        TabView(selection: $store.selectedTab) {
-            RadarMapView()
-                .tabItem {
-                    Label("주변", systemImage: "location.north.line")
+        RadarMapView()
+            .task {
+                locationService.requestWhenInUseAuthorization()
+                await store.refreshPlaces(from: locationService.currentLocation)
+            }
+            .onChange(of: locationService.currentLocation) { _, newLocation in
+                Task {
+                    await store.refreshPlaces(from: newLocation)
+                    await liveActivityController.update(place: store.selectedPlace, deviceHeadingDegrees: locationService.headingDegrees)
                 }
-                .tag(AppTab.radar)
-
-            CategorySettingsView()
-                .tabItem {
-                    Label("설정", systemImage: "slider.horizontal.3")
+            }
+            .onChange(of: locationService.headingDegrees) { _, newHeading in
+                Task {
+                    await liveActivityController.update(place: store.selectedPlace, deviceHeadingDegrees: newHeading)
                 }
-                .tag(AppTab.categories)
-        }
-        .task {
-            locationService.requestWhenInUseAuthorization()
-            await store.refreshPlaces(from: locationService.currentLocation)
-        }
-        .onChange(of: locationService.currentLocation) { _, newLocation in
-            Task {
-                await store.refreshPlaces(from: newLocation)
-                await liveActivityController.update(place: store.selectedPlace, deviceHeadingDegrees: locationService.headingDegrees)
             }
-        }
-        .onChange(of: locationService.headingDegrees) { _, newHeading in
-            Task {
-                await liveActivityController.update(place: store.selectedPlace, deviceHeadingDegrees: newHeading)
+            .onChange(of: store.selectedPlace) { _, newPlace in
+                Task {
+                    await liveActivityController.update(place: newPlace, deviceHeadingDegrees: locationService.headingDegrees)
+                }
             }
-        }
-        .onChange(of: store.selectedPlace) { _, newPlace in
-            Task {
-                await liveActivityController.update(place: newPlace, deviceHeadingDegrees: locationService.headingDegrees)
-            }
-        }
     }
 }
 

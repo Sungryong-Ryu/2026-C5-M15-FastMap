@@ -35,7 +35,7 @@ struct NearbyPlaceService {
     func searchPlaces(
         category: PlaceCategory,
         around origin: CLLocationCoordinate2D,
-        radiusMeters: CLLocationDistance = 1500
+        radiusMeters: CLLocationDistance = 3000
     ) async -> [Place] {
         if let poiCategories = category.pointOfInterestCategories {
             let request = MKLocalPointsOfInterestRequest(center: origin, radius: radiusMeters)
@@ -43,23 +43,46 @@ struct NearbyPlaceService {
 
             do {
                 let response = try await MKLocalSearch(request: request).start()
-                return normalizedPlaces(from: response.mapItems, category: category, origin: origin, radiusMeters: radiusMeters)
-            } catch {
+                let places = normalizedPlaces(
+                    from: response.mapItems,
+                    category: category,
+                    origin: origin,
+                    radiusMeters: radiusMeters
+                )
+                if !places.isEmpty {
+                    return places
+                }
+            } catch is CancellationError {
                 return []
+            } catch {
+                // Some regions don't classify every place with an Apple POI category.
+                // Fall through to a localized natural-language search.
             }
         }
 
+        return await searchPlacesByCategoryName(category, around: origin, radiusMeters: radiusMeters)
+    }
+
+    private func searchPlacesByCategoryName(
+        _ category: PlaceCategory,
+        around origin: CLLocationCoordinate2D,
+        radiusMeters: CLLocationDistance
+    ) async -> [Place] {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = category.koreanQuery
+        request.resultTypes = .pointOfInterest
         request.region = MKCoordinateRegion(
             center: origin,
             latitudinalMeters: radiusMeters * 2,
             longitudinalMeters: radiusMeters * 2
         )
+        request.regionPriority = .required
 
         do {
             let response = try await MKLocalSearch(request: request).start()
             return normalizedPlaces(from: response.mapItems, category: category, origin: origin, radiusMeters: radiusMeters)
+        } catch is CancellationError {
+            return []
         } catch {
             return []
         }
@@ -108,7 +131,7 @@ struct NearbyPlaceService {
     }
 }
 
-private extension PlaceCategory {
+extension PlaceCategory {
     var pointOfInterestCategories: [MKPointOfInterestCategory]? {
         switch self {
         case .searchResult:

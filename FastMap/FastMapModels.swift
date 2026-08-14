@@ -92,8 +92,10 @@ struct Place: Identifiable, Hashable, Codable {
     let bearingDegrees: Double
 
     var mapItem: MKMapItem {
-        let placemark = MKPlacemark(coordinate: coordinate)
-        let item = MKMapItem(placemark: placemark)
+        let item = MKMapItem(
+            location: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude),
+            address: nil
+        )
         item.name = name
         return item
     }
