@@ -74,15 +74,21 @@ struct RadarMapView: View {
         VStack(alignment: .trailing, spacing: 12) {
             Spacer()
 
-            mapControlCluster
+            if !isDrawerExpanded {
+                mapControlCluster
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+            }
 
             PlaceDrawer(
                 isExpanded: $isDrawerExpanded,
                 showSettings: { isShowingSettings = true }
             )
+            .frame(maxWidth: 560)
         }
-        .padding(.horizontal, 16)
-        .padding(.bottom, -26)
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .safeAreaPadding(.horizontal, 12)
+        .safeAreaPadding(.bottom, 8)
+        .animation(.snappy(duration: 0.34), value: isDrawerExpanded)
     }
 
     @ViewBuilder
@@ -179,10 +185,10 @@ private struct PlaceDrawer: View {
         Group {
             if #available(iOS 26.0, *) {
                 drawerContent
-                    .glassEffect(.regular, in: .rect(cornerRadius: 26))
+                    .glassEffect(.regular, in: .rect(cornerRadius: 28))
             } else {
                 drawerContent
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .shadow(color: .black.opacity(0.16), radius: 24, y: 12)
             }
         }
@@ -204,7 +210,6 @@ private struct PlaceDrawer: View {
                 .fill(.secondary.opacity(0.35))
                 .frame(width: 36, height: 5)
                 .frame(maxWidth: .infinity)
-                .padding(.top, 7)
 
             searchBar
             categoryControls
@@ -218,9 +223,9 @@ private struct PlaceDrawer: View {
                 liveActivityControls
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 30)
-        .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
     }
 
     private var searchBar: some View {
@@ -265,9 +270,10 @@ private struct PlaceDrawer: View {
                 .accessibilityLabel("FastMap 설정")
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 44)
-        .background(Color(.secondarySystemBackground).opacity(0.72), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .frame(minHeight: 48)
+        .background(Color(.secondarySystemBackground).opacity(0.72), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
     }
 
     private var categoryControls: some View {
@@ -300,7 +306,7 @@ private struct PlaceDrawer: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(isSelected ? Color.white : Color.primary)
                 .padding(.horizontal, 12)
-                .frame(height: 36)
+                .frame(minHeight: 38)
                 .background(isSelected ? category.tint : Color(.tertiarySystemFill), in: Capsule())
         }
         .buttonStyle(.plain)
@@ -358,7 +364,7 @@ private struct PlaceDrawer: View {
                 }
             }
         }
-        .frame(maxHeight: 218, alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 
     private var liveActivityControls: some View {
@@ -370,6 +376,7 @@ private struct PlaceDrawer: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .lineLimit(1)
+            .minimumScaleFactor(0.85)
 
             Spacer(minLength: 4)
 
@@ -504,8 +511,7 @@ private struct PlaceRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-
-            Spacer(minLength: 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: 3) {
                 Text(GeoMath.formattedDistance(place.distanceMeters))
@@ -516,7 +522,7 @@ private struct PlaceRow: View {
             }
         }
         .contentShape(Rectangle())
-        .padding(.vertical, 8)
+        .padding(.vertical, 9)
     }
 }
 

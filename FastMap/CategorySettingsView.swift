@@ -65,8 +65,7 @@ struct CategorySettingsView: View {
                 .background(category.tint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
 
             Text(category.title)
-
-            Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Toggle(category.title, isOn: Binding(
                 get: { isSelected },
@@ -79,8 +78,10 @@ struct CategorySettingsView: View {
             ))
             .labelsHidden()
             .tint(category.tint)
+            .fixedSize()
         }
-        .frame(minHeight: 40)
+        .padding(.vertical, 3)
+        .frame(minHeight: 44)
         .accessibilityElement(children: .combine)
     }
 }
@@ -100,12 +101,15 @@ private struct InfoRow: View {
                 .background(tint, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
 
             Text(title)
-            Spacer()
+                .frame(maxWidth: .infinity, alignment: .leading)
             Text(value)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .font(.body)
-        .frame(minHeight: 40)
+        .padding(.vertical, 3)
+        .frame(minHeight: 44)
     }
 }
 
