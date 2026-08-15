@@ -18,6 +18,7 @@ struct FastMapLiveActivityWidget: Widget {
                         Text(context.state.distanceText)
                             .font(.title3.weight(.bold))
                     }
+                    .padding(.top, 2)
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
@@ -29,6 +30,7 @@ struct FastMapLiveActivityWidget: Widget {
                         Text(context.state.directionText)
                             .font(.headline)
                     }
+                    .padding(.top, 2)
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
@@ -36,6 +38,7 @@ struct FastMapLiveActivityWidget: Widget {
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 6)
                 }
             } compactLeading: {
                 Image(systemName: "location.north.fill")
@@ -76,10 +79,14 @@ private struct LockScreenActivityView: View {
 
                 Text("\(state.directionText) · \(state.distanceText)")
                     .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
 
-            Spacer()
+            Spacer(minLength: 0)
         }
-        .padding(.vertical, 6)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
