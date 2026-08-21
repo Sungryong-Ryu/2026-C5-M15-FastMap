@@ -7,8 +7,6 @@ import SwiftUI
 @MainActor
 final class FastMapStore: ObservableObject {
     @Published var selectedTab: AppTab = .radar
-    @Published var selectedCategories: Set<PlaceCategory> = [.restroom, .cafe, .bank]
-    @Published var focusedCategory: PlaceCategory = .restroom
     @Published var places: [Place] = []
     @Published var selectedPlace: Place?
     @Published var route: MKRoute?
@@ -16,21 +14,31 @@ final class FastMapStore: ObservableObject {
     @Published var errorMessage: String?
     @Published var searchText = ""
 
+
     private var lastRefreshLocation: CLLocationCoordinate2D?
+    private var lastRefreshCategoryIDs: [String] = []
 
-    func toggleCategory(_ category: PlaceCategory) {
-        if selectedCategories.contains(category) {
-            selectedCategories.remove(category)
-        } else {
-            selectedCategories.insert(category)
-            focusedCategory = category
-        }
-    }
+    func refreshPlaces(
+        from location: CLLocationCoordinate2D,
+        categories: [PlaceCategory],
+        force: Bool = false
+    ) async {
+        let categoryIDs = categories.map(\.id)
+        let categoriesChanged = categoryIDs != lastRefreshCategoryIDs
 
-    func refreshPlaces(from location: CLLocationCoordinate2D, force: Bool = false) async {
-        if !force, let lastRefreshLocation {
+        if !force, !categoriesChanged, let lastRefreshLocation {
             let moved = GeoMath.distanceMeters(from: lastRefreshLocation, to: location)
             guard moved > 70 || places.isEmpty else { return }
+        }
+
+        lastRefreshCategoryIDs = categoryIDs
+
+        guard !categories.isEmpty else {
+            places = []
+            selectedPlace = nil
+            route = nil
+            lastRefreshLocation = location
+            return
         }
 
         isLoading = true
@@ -38,7 +46,6 @@ final class FastMapStore: ObservableObject {
         defer { isLoading = false }
 
         let service = NearbyPlaceService()
-        let categories = selectedCategories.isEmpty ? [focusedCategory] : Array(selectedCategories)
         let nestedPlaces = await withTaskGroup(of: [Place].self) { group in
             for category in categories {
                 group.addTask {
@@ -53,11 +60,15 @@ final class FastMapStore: ObservableObject {
             return results
         }
 
-        places = nestedPlaces
+        let refreshedPlaces = nestedPlaces
             .flatMap { $0 }
             .sorted { $0.distanceMeters < $1.distanceMeters }
 
-        selectedPlace = places.first
+        // 자동 선택하지 않습니다.
+        // 선택이 생기면 카메라가 그 장소로 이동해 버려서, 앱을 켤 때 현위치가 아닌 곳이 보였습니다.
+        let previousSelectionID = selectedPlace?.id
+        places = refreshedPlaces
+        selectedPlace = places.first { $0.id == previousSelectionID }
         lastRefreshLocation = location
         await updateRoute(from: location)
     }

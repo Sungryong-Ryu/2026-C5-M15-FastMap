@@ -55,6 +55,28 @@ final class LiveActivityController: ObservableObject {
         )
     }
 
+    func updateNavigation(place: Place, snapshot: WalkingNavigationSnapshot) async {
+        guard let activity else { return }
+        let state = FastMapActivityAttributes.ContentState(
+            placeName: place.name,
+            categoryTitle: place.category.title,
+            distanceText: snapshot.distanceText,
+            directionText: "도보 길안내",
+            arrowRotationDegrees: snapshot.arrowRotationDegrees,
+            updatedAt: Date(),
+            instructionText: snapshot.instruction,
+            remainingTimeText: snapshot.remainingTimeText,
+            maneuvers: snapshot.maneuvers,
+            maneuverDistanceText: snapshot.maneuverDistanceText
+        )
+        await activity.update(
+            ActivityContent(
+                state: state,
+                staleDate: Date().addingTimeInterval(5 * 60)
+            )
+        )
+    }
+
     func end() async {
         guard let activity else { return }
         await activity.end(nil, dismissalPolicy: .immediate)

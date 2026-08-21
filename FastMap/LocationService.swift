@@ -35,8 +35,24 @@ final class LocationService: NSObject, ObservableObject, CLLocationManagerDelega
     func startEfficientUpdates() {
         guard manager.authorizationStatus == .authorizedAlways
             || manager.authorizationStatus == .authorizedWhenInUse else { return }
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.distanceFilter = 80
+        manager.activityType = .other
         manager.startUpdatingLocation()
         if CLLocationManager.headingAvailable() {
+            manager.startUpdatingHeading()
+        }
+    }
+
+    func startNavigationUpdates() {
+        guard manager.authorizationStatus == .authorizedAlways
+            || manager.authorizationStatus == .authorizedWhenInUse else { return }
+        manager.desiredAccuracy = kCLLocationAccuracyBest
+        manager.distanceFilter = 5
+        manager.activityType = .fitness
+        manager.startUpdatingLocation()
+        if CLLocationManager.headingAvailable() {
+            manager.headingFilter = 3
             manager.startUpdatingHeading()
         }
     }
