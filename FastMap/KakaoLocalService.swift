@@ -1,6 +1,6 @@
 //
 //  KakaoLocalService.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  Kakao Local API로 주변 카페를 찾습니다.
 //

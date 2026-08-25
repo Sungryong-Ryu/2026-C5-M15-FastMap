@@ -358,10 +358,10 @@
 				DEVELOPMENT_TEAM = X62B5B44Z2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = CoFFMap;
+				INFOPLIST_KEY_CFBundleDisplayName = "아아딨지";
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "길안내 화면에서 Apple Music 재생 정보를 표시하고 제어하기 위해 사용합니다.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "프로필 사진을 찍기 위해 카메라를 사용합니다.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "CoFFMap은 주변 카페와 이동수단별 경로를 보여주기 위해 현재 위치를 사용합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "아아딨지는 주변 카페와 이동수단별 경로를 보여주기 위해 현재 위치를 사용합니다.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -398,10 +398,10 @@
 				DEVELOPMENT_TEAM = X62B5B44Z2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = CoFFMap;
+				INFOPLIST_KEY_CFBundleDisplayName = "아아딨지";
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "길안내 화면에서 Apple Music 재생 정보를 표시하고 제어하기 위해 사용합니다.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "프로필 사진을 찍기 위해 카메라를 사용합니다.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "CoFFMap은 주변 카페와 이동수단별 경로를 보여주기 위해 현재 위치를 사용합니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "아아딨지는 주변 카페와 이동수단별 경로를 보여주기 위해 현재 위치를 사용합니다.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_NSSupportsLiveActivitiesFrequentUpdates = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

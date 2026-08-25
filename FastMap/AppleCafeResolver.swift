@@ -1,6 +1,6 @@
 //
 //  AppleCafeResolver.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  Apple 지도(MKLocalSearch)로 카페를 찾습니다. 두 가지 일을 합니다.
 //

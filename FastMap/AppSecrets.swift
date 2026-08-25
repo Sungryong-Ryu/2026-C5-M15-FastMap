@@ -1,6 +1,6 @@
 //
 //  AppSecrets.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  Kakao REST API 키를 읽습니다.
 //

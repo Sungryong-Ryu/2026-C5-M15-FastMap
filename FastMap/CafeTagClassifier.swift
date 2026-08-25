@@ -1,6 +1,6 @@
 //
 //  CafeTagClassifier.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  카페 하나에 태그를 붙입니다. 전부 온디바이스에서, 네트워크 없이 계산합니다.
 //

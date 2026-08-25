@@ -39,7 +39,7 @@ final class AccountManager: ObservableObject {
             }
             let displayName = providedName?.isEmpty == false
                 ? providedName!
-                : previousAccount?.displayName ?? "CoFFMap 사용자"
+                : previousAccount?.displayName ?? "아아딨지 사용자"
 
             let signedInAccount = AppleAccount(
                 userIdentifier: credential.user,

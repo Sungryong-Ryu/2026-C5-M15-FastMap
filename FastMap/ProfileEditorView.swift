@@ -1,6 +1,6 @@
 //
 //  ProfileEditorView.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  프로필 꾸미기. 사진(촬영 / 앨범)과 애플 이모지 아바타 중에서 고를 수 있습니다.
 //

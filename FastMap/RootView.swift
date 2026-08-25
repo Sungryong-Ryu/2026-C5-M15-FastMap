@@ -1,6 +1,6 @@
 //
 //  RootView.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  화면은 지도 하나뿐이라, 여기는 위치·경로·Live Activity를 이어 주는 배선만 합니다.
 //

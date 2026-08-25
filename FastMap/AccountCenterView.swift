@@ -26,7 +26,7 @@ struct AccountCenterView: View {
                     }
                 }
                 .padding(.horizontal, TossEdge.screenInset)
-                .padding(.top, TossSpacing.s)
+                .padding(.top, TossSpacing.xxl)
                 .padding(.bottom, TossSpacing.xxl)
             }
             .scrollIndicators(.hidden)
@@ -34,7 +34,7 @@ struct AccountCenterView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("내 CoFFMap")
+                    Text("내 아아딨지")
                         .font(TossFont.title3)
                         .foregroundStyle(TossColor.textPrimary)
                 }
