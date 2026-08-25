@@ -1,6 +1,6 @@
 //
 //  WaterProximity.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  "강변·바다뷰" 태그를 좌표만으로 판정합니다.
 //

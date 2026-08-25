@@ -1,6 +1,6 @@
 //
 //  LaunchSplashView.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  앱이 시작될 때 브랜드 색상과 머그 로고만 잠시 보여 줍니다.
 //

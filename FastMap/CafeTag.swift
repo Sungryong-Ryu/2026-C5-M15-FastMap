@@ -1,6 +1,6 @@
 //
 //  CafeTag.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  카페를 나누는 고정 태그입니다.
 //

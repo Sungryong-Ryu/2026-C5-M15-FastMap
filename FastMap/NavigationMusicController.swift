@@ -40,7 +40,7 @@ final class NavigationMusicController: NSObject, ObservableObject {
 
     private let player = MPMusicPlayerController.systemMusicPlayer
     private var isObserving = false
-    private static let authorizationDidChange = Notification.Name("CoFFMapMusicAuthorizationDidChange")
+    private static let authorizationDidChange = Notification.Name("WhereismyAHAHMusicAuthorizationDidChange")
 
     var canRequestAccess: Bool { authorizationStatus == .notDetermined }
     var canControlMusic: Bool { authorizationStatus == .authorized && hasNowPlayingItem }

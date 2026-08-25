@@ -1,6 +1,6 @@
 //
 //  SavedCafeStore.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  즐겨찾기한 카페를 기기와 iCloud에 저장합니다.
 //

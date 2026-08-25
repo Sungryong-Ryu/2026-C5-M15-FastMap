@@ -1,6 +1,6 @@
 //
-//  CoFFMapApp.swift
-//  CoFFMap
+//  WhereismyAHAHApp.swift
+//  WhereismyAHAH
 //
 //  카페만 보여 주는 지도 앱.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct CoFFMapApp: App {
+struct WhereismyAHAHApp: App {
     @State private var isShowingLaunchSplash = true
     @StateObject private var locationService = LocationService()
     @StateObject private var store = CafeStore()

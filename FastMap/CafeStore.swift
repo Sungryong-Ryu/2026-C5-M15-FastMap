@@ -1,6 +1,6 @@
 //
 //  CafeStore.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  화면이 보는 상태 전부. 카페 목록, 선택, 태그 필터, 거리, 도보 경로.
 //

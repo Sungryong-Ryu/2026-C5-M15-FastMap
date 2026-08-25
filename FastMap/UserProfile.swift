@@ -1,6 +1,6 @@
 //
 //  UserProfile.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  사용자가 직접 꾸미는 프로필. 사진을 쓰거나, 애플 이모지로 아바타를 만들 수 있습니다.
 //  사진은 앱 문서 폴더에 리사이즈해서 저장하고, 나머지 설정은 UserDefaults에 둡니다.

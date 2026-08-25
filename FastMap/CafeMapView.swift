@@ -1,6 +1,6 @@
 //
 //  CafeMapView.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  앱의 유일한 화면. 지도가 배경이고, 하단 시트에서 검색하고 고릅니다.
 //

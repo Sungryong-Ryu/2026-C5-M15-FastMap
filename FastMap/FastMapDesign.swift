@@ -1,6 +1,6 @@
 //
 //  FastMapDesign.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  상단 오로라와 깊은 블랙 대비를 중심으로 한 다크 디자인 시스템.
 //  기존 Toss* 이름은 화면 구조를 안전하게 유지하기 위한 호환 이름입니다.

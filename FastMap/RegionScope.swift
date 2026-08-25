@@ -1,6 +1,6 @@
 //
 //  RegionScope.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  "이 지역 전체"가 어디까지인지 정합니다.
 //

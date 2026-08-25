@@ -1,6 +1,6 @@
 //
 //  CafeModels.swift
-//  CoFFMap
+//  WhereismyAHAH
 //
 //  앱이 다루는 값은 카페 하나뿐입니다.
 //
