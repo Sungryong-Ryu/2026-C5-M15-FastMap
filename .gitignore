@@ -15,3 +15,9 @@ Package.resolved
 # Editor
 .vscode/
 .idea/
+
+# API 키
+FastMap/Secrets.plist
+
+# 카페 전용 개편에서 걷어낸 예전 파일 (확인 후 삭제하세요)
+_removed/

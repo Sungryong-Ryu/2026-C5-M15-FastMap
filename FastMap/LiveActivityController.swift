@@ -15,25 +15,44 @@ final class LiveActivityController: ObservableObject {
         statusText = isRunning ? "잠금화면과 Dynamic Island에서 표시 중" : "라이브 활동 대기 중"
     }
 
-    func startTracking(place: Place, deviceHeadingDegrees: Double) async {
+    func startTracking(cafe: Cafe, deviceHeadingDegrees: Double) async {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             statusText = "기기에서 Live Activity가 꺼져 있습니다."
             return
         }
 
-        let contentState = contentState(for: place, deviceHeadingDegrees: deviceHeadingDegrees)
+        let contentState = contentState(for: cafe, deviceHeadingDegrees: deviceHeadingDegrees)
         let attributes = FastMapActivityAttributes(
-            destinationName: place.name,
-            categoryTitle: place.category.title
+            destinationName: cafe.name,
+            categoryTitle: cafe.tagline
         )
+
+        // ActivityKit의 attributes는 시작한 뒤 바꿀 수 없습니다.
+        // 앱을 강제 종료했다가 다시 켜면 init에서 살아 있던 활동을 그대로 물려받는데,
+        // 그 상태로 다른 카페 길안내를 시작하면 잠금화면에는 예전 목적지 이름이 남습니다.
+        // 목적지가 달라졌으면 기존 활동을 끝내고 새로 요청합니다.
+        if let existing = activity, existing.attributes.destinationName != cafe.name {
+            await existing.end(nil, dismissalPolicy: .immediate)
+            activity = nil
+        }
 
         do {
             if let activity {
-                await activity.update(ActivityContent(state: contentState, staleDate: Date().addingTimeInterval(10 * 60)))
+                await activity.update(
+                    ActivityContent(
+                        state: contentState,
+                        staleDate: Date().addingTimeInterval(10 * 60),
+                        relevanceScore: 100
+                    )
+                )
             } else {
                 activity = try Activity.request(
                     attributes: attributes,
-                    content: ActivityContent(state: contentState, staleDate: Date().addingTimeInterval(10 * 60)),
+                    content: ActivityContent(
+                        state: contentState,
+                        staleDate: Date().addingTimeInterval(10 * 60),
+                        relevanceScore: 100
+                    ),
                     pushType: nil
                 )
             }
@@ -45,23 +64,24 @@ final class LiveActivityController: ObservableObject {
         }
     }
 
-    func update(place: Place?, deviceHeadingDegrees: Double) async {
-        guard let activity, let place else { return }
+    func update(cafe: Cafe?, deviceHeadingDegrees: Double) async {
+        guard let activity, let cafe else { return }
         await activity.update(
             ActivityContent(
-                state: contentState(for: place, deviceHeadingDegrees: deviceHeadingDegrees),
-                staleDate: Date().addingTimeInterval(10 * 60)
+                state: contentState(for: cafe, deviceHeadingDegrees: deviceHeadingDegrees),
+                staleDate: Date().addingTimeInterval(10 * 60),
+                relevanceScore: 100
             )
         )
     }
 
-    func updateNavigation(place: Place, snapshot: WalkingNavigationSnapshot) async {
+    func updateNavigation(cafe: Cafe, snapshot: WalkingNavigationSnapshot) async {
         guard let activity else { return }
         let state = FastMapActivityAttributes.ContentState(
-            placeName: place.name,
-            categoryTitle: place.category.title,
+            placeName: cafe.name,
+            categoryTitle: cafe.tagline,
             distanceText: snapshot.distanceText,
-            directionText: "도보 길안내",
+            directionText: "\(snapshot.modeTitle) 길안내",
             arrowRotationDegrees: snapshot.arrowRotationDegrees,
             updatedAt: Date(),
             instructionText: snapshot.instruction,
@@ -72,7 +92,8 @@ final class LiveActivityController: ObservableObject {
         await activity.update(
             ActivityContent(
                 state: state,
-                staleDate: Date().addingTimeInterval(5 * 60)
+                staleDate: Date().addingTimeInterval(5 * 60),
+                relevanceScore: 100
             )
         )
     }
@@ -85,13 +106,13 @@ final class LiveActivityController: ObservableObject {
         statusText = "라이브 활동 대기 중"
     }
 
-    private func contentState(for place: Place, deviceHeadingDegrees: Double) -> FastMapActivityAttributes.ContentState {
+    private func contentState(for cafe: Cafe, deviceHeadingDegrees: Double) -> FastMapActivityAttributes.ContentState {
         FastMapActivityAttributes.ContentState(
-            placeName: place.name,
-            categoryTitle: place.category.title,
-            distanceText: GeoMath.formattedDistance(place.distanceMeters),
-            directionText: GeoMath.directionText(for: place.bearingDegrees),
-            arrowRotationDegrees: relativeArrowRotation(destinationBearing: place.bearingDegrees, deviceHeading: deviceHeadingDegrees),
+            placeName: cafe.name,
+            categoryTitle: cafe.tagline,
+            distanceText: GeoMath.formattedDistance(cafe.distanceMeters),
+            directionText: GeoMath.directionText(for: cafe.bearingDegrees),
+            arrowRotationDegrees: relativeArrowRotation(destinationBearing: cafe.bearingDegrees, deviceHeading: deviceHeadingDegrees),
             updatedAt: Date()
         )
     }

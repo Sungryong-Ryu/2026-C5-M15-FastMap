@@ -1,97 +1,33 @@
-# 🌳 FastMap (임시)
+# CoFFMap
 
-> 지금 내 주변에서 '나에게 필요한 장소'를 가장 빠르게 찾는 iOS 지도 앱.
+현재 위치나 사용자가 지도에서 보고 있는 지역의 카페를 빠르게 찾는 SwiftUI 지도 앱입니다. 앱을 열면 지도가 바로 보이고, 하단 검색창과 카페 유형 필터로 원하는 카페를 좁힐 수 있습니다.
 
-FastMap은 현재 위치를 기준으로 화장실, 카페, 은행, 병원, 음식점, 약국, 편의점, 주차장 같은 주변 장소를 빠르게 탐색하는 SwiftUI 기반 iOS 앱입니다.
-지도 위의 마커, 거리순 장소 목록, 도보 경로, 방향 정보, Live Activity를 한 화면 흐름 안에서 제공합니다.
+## 주요 기능
 
-<p align="center">
-  <img alt="Swift" src="https://img.shields.io/badge/Swift-6.0-F05138?style=flat-square&logo=swift&logoColor=white">
-  <img alt="SwiftUI" src="https://img.shields.io/badge/SwiftUI-iOS-blue?style=flat-square&logo=apple&logoColor=white">
-  <img alt="MapKit" src="https://img.shields.io/badge/MapKit-Location-34C759?style=flat-square&logo=apple&logoColor=white">
-  <img alt="ActivityKit" src="https://img.shields.io/badge/ActivityKit-Live%20Activity-5856D6?style=flat-square&logo=apple&logoColor=white">
-</p>
+- 현재 위치 또는 이동한 지도 화면의 카페를 지도 마커로 표시
+- 하단 드로어에서 카페명·지역 검색
+- 프랜차이즈, 개인카페, 강변·바다뷰, 대형카페, 베이커리, 분위기 필터
+- 전체·50m·100m·200m·500m·1km 거리 필터
+- 가까운 순 카페 목록과 도보·자동차·자전거·대중교통 길찾기
+- 카카오맵 상세 페이지 연결, 즐겨찾기, 이동수단별 Live Activity 길안내
+- 길안내 화면의 Apple Music 미니 플레이어와 외부 음악 재생 유지
+- 검색 중심이 국내면 Kakao Local API, 해외면 Apple MapKit으로 자동 전환
+- 국내에서 Kakao Local API를 사용할 수 없을 때 Apple MapKit 검색으로 자동 대체
 
-## 📌 프로젝트 소개
+## 카페 데이터
 
-길을 걷다가 "근처 화장실 어디 있지?", "가장 가까운 카페까지 얼마나 남았지?" 같은 순간이 자주 생깁니다. 그럴때 FastMap은 이런 짧고 급한 탐색을 위해 만들어진 앱입니다.
+검색 중심 좌표가 대한민국이면 Kakao Local REST API를 사용하고, 해외이면 Apple MapKit으로 자동 전환합니다. 현재 위치뿐 아니라 사용자가 지도를 옮긴 지역과 직접 검색의 기준 좌표에도 같은 규칙을 적용합니다. 국내에서는 공식 카테고리 검색 API의 카페 코드(`CE7`)로 주변 장소를 조회하며, REST API 키가 없거나 요청이 실패하면 MapKit으로 전환합니다. 길찾기는 같은 REST 키로 Kakao Map의 도보·자전거·대중교통 경로와 Kakao Mobility의 자동차 경로를 조회합니다.
 
-앱을 열면 현재 위치 주변의 주요 장소를 카테고리별로 모아 보여주고, 선택한 장소까지의 거리와 방향을 직관적으로 확인할 수 있습니다. 장소를 선택하면 도보 경로가 지도 위에 표시되고, Live Activity와 Dynamic Island를 통해 앱 밖에서도 목적지 정보를 이어서 볼 수 있습니다.
+1. Kakao Developers에서 앱을 만들고 REST API 키를 발급합니다.
+2. `FastMap/Secrets.example.plist`를 `FastMap/Secrets.plist`로 복사합니다.
+3. `KAKAO_REST_API_KEY` 값에 키를 입력합니다.
 
-## ✅ 주요 기능
+`Secrets.plist`는 Git에서 제외됩니다. 카카오 응답은 화면 표시 중 메모리에서만 사용하며, 저장이 필요한 즐겨찾기는 Apple MapKit 결과로 다시 확인한 뒤 보관합니다.
 
-- 현재 위치 기반 주변 장소 탐색
-- 화장실, 카페, 은행, 병원, 음식점, 약국, 편의점, 주차장 카테고리 지원
-- 지도 마커와 하단 드로어를 통한 빠른 장소 비교
-- 장소명 또는 주소 검색
-- 선택한 장소까지의 도보 경로 표시
-- 기기 방향에 맞춘 방향 안내 정보 계산
-- Live Activity 및 Dynamic Island 위젯 지원
-- 위치 권한이 없을 때 서울시청 기준 미리보기 위치 제공
+## 실행
 
-## 🔥 화면 구성
+1. `FastMap.xcodeproj`를 Xcode에서 엽니다.
+2. `FastMap` scheme과 실행할 iPhone을 선택합니다.
+3. 앱을 실행하고 위치 권한을 허용합니다.
 
-| 주변 탐색 | 카테고리 설정 | Live Activity |
-| --- | --- | --- |
-| 지도 위에서 가까운 장소를 바로 확인합니다. | 필요한 장소 카테고리만 선택해 탐색 범위를 줄입니다. | 잠금 화면과 Dynamic Island에서 거리와 방향을 이어서 확인합니다. |
-
-> 스크린샷은 추후 `Docs/Images/` 폴더에 추가하면 이 영역에 바로 연결할 수 있습니다.
-
-## 기술 스택
-
-- **SwiftUI**: 메인 화면, 탭, 드로어, 설정 화면 구현
-- **MapKit**: 지도, 장소 검색, POI 검색, 도보 경로 계산
-- **CoreLocation**: 현재 위치와 기기 방향 추적
-- **ActivityKit / WidgetKit**: Live Activity와 Dynamic Island 표시
-- **Combine / ObservableObject**: 앱 상태와 장소 목록 관리
-
-## 프로젝트 구조
-
-```text
-FastMap/
-├── FastMap/
-│   ├── ContentView.swift              # 앱의 탭 구조
-│   ├── RadarMapView.swift             # 지도, 검색, 장소 드로어
-│   ├── CategorySettingsView.swift     # 카테고리 선택 화면
-│   ├── FastMapStore.swift             # 장소 목록, 선택 상태, 경로 상태
-│   ├── LocationService.swift          # 위치 권한, 현재 위치, 방향 업데이트
-│   ├── NearbyPlaceService.swift       # MapKit 기반 주변 장소 검색
-│   ├── GeoMath.swift                  # 거리와 방위각 계산
-│   └── FastMapModels.swift            # 장소/카테고리 모델
-├── FastMapLiveActivity/
-│   └── FastMapLiveActivityWidget.swift
-├── FastMapShared/
-│   └── FastMapActivityAttributes.swift
-└── Config/
-    └── FastMapLiveActivity-Info.plist
-```
-
-## 실행 방법
-
-1. 이 저장소를 클론합니다.
-2. `FastMap.xcodeproj`를 Xcode에서 엽니다.
-3. `FastMap` scheme을 선택합니다.
-4. iPhone Simulator 또는 실제 기기에서 실행합니다.
-5. 위치 권한을 허용하면 현재 위치 주변 장소를 탐색할 수 있습니다.
-
-## 개발 메모
-
-- 장소 검색은 `MKLocalSearch`와 `MKLocalPointsOfInterestRequest`를 함께 사용합니다.
-- 장소 목록은 현재 위치에서 가까운 순서로 정렬됩니다.
-- 사용자가 약 70m 이상 이동하면 주변 장소를 다시 가져옵니다.
-- 선택된 장소가 바뀌면 도보 경로와 Live Activity 상태가 함께 갱신됩니다.
-
-## 앞으로 해보고 싶은 것
-
-- 실제 앱 화면 스크린샷 추가
-- 카테고리별 커스텀 아이콘 개선
-- 즐겨찾기 장소 저장
-- 목적지까지 남은 시간 표시
-- 접근성 옵션 강화
-- 지도 스타일과 테마 선택 기능
-
-## Team
-
-2026-C5-M15 FastMap
-
-🍀
+홈 화면과 시스템 표시 이름은 `CoFFMap`입니다. 기존 프로젝트/타깃 식별자는 서명과 Live Activity 호환성을 위해 유지했습니다.

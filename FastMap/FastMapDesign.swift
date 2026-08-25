@@ -1,13 +1,12 @@
 //
 //  FastMapDesign.swift
-//  FastMap
+//  CoFFMap
 //
-//  토스(Toss) 스타일 디자인 시스템 — 다크 모드 전용.
-//  - 서피스는 색으로만 계단을 만들고, 경계는 헤어라인 한 줄로 처리합니다.
-//    (다크 배경에서는 그림자가 거의 보이지 않아 오히려 지저분해집니다.)
-//  - 토스 블루 + 뉴트럴 그레이
-//  - 큰 볼드 타이틀 + 촘촘한 본문
-//  - 꽉 찬 CTA 버튼 + 바텀시트
+//  상단 오로라와 깊은 블랙 대비를 중심으로 한 다크 디자인 시스템.
+//  기존 Toss* 이름은 화면 구조를 안전하게 유지하기 위한 호환 이름입니다.
+//  - 화면 상단에만 집중된 블루 / 선셋 광원
+//  - 그라데이션을 걷어낸 단단한 카드와 선명한 CTA
+//  - 큰 제목, 충분한 여백, 높은 텍스트 대비
 //
 
 import SwiftUI
@@ -23,30 +22,33 @@ private func tossColor(_ hex: UInt32) -> Color {
     )
 }
 
-/// 다크 전용 팔레트. 서피스는 base → surface1 → surface2 → surface3 순으로 밝아집니다.
 enum TossPalette {
-    static let base: UInt32 = 0x0E1013
-    static let surface1: UInt32 = 0x171A1F
-    static let surface2: UInt32 = 0x1F242B
-    static let surface3: UInt32 = 0x2A3038
-    static let line: UInt32 = 0x252A32
+    static let base: UInt32 = 0x050607
+    static let surface1: UInt32 = 0x121416
+    static let surface2: UInt32 = 0x1A1D20
+    static let surface3: UInt32 = 0x24282C
+    static let line: UInt32 = 0x353A40
 
-    static let textPrimary: UInt32 = 0xF2F4F6
-    static let textSecondary: UInt32 = 0x99A1AC
-    static let textTertiary: UInt32 = 0x646C77
+    static let textPrimary: UInt32 = 0xF8FAFC
+    static let textSecondary: UInt32 = 0xC8CDD5
+    static let textTertiary: UInt32 = 0xA0A7B2
 
-    static let blue: UInt32 = 0x4B93F8
-    static let bluePressed: UInt32 = 0x3C7BD6
-    static let blueWeak: UInt32 = 0x18273D
+    static let blue: UInt32 = 0x3478F6
+    static let bluePressed: UInt32 = 0x245ED6
+    static let blueWeak: UInt32 = 0x10254A
 
-    static let red: UInt32 = 0xFF5A66
-    static let redWeak: UInt32 = 0x2E1E21
-    static let green: UInt32 = 0x2BD68F
-    static let yellow: UInt32 = 0xFFC24B
+    static let red: UInt32 = 0xFF453A
+    static let redWeak: UInt32 = 0x351817
+    static let green: UInt32 = 0x30D98B
+    static let yellow: UInt32 = 0xFFD45A
 }
 
 /// 앱 전역에서 사용하는 시맨틱 컬러.
 enum TossColor {
+    /// 홈 화면 앱 아이콘과 시작 화면이 공유하는 브랜드 배경색.
+    static let appIconBackground = tossColor(0x68C7FE)
+    /// 시작 화면 머그 로고. 기존 앱 아이콘의 커피잔 색과 같습니다.
+    static let appIconInk = tossColor(0x101E26)
     /// 화면 전체 배경
     static let background = tossColor(TossPalette.base)
     /// 카드, 시트, 셀 등 올라온 서피스
@@ -75,7 +77,172 @@ enum TossColor {
     static let yellow = tossColor(TossPalette.yellow)
 
     /// 지도처럼 배경이 예측 불가한 곳에 얹는 서피스
-    static let floatingSurface = tossColor(TossPalette.surface2)
+    static let floatingSurface = tossColor(0x111417)
+}
+
+/// 그라데이션은 배경 광원과 주요 CTA에만 제한적으로 사용합니다.
+enum MusicGradient {
+    static let accent = LinearGradient(
+        colors: [tossColor(0x285EFF), tossColor(0x357DFF), tossColor(0x58C7FF)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let warmAccent = LinearGradient(
+        colors: [tossColor(0xFF3934), tossColor(0xFF613E), tossColor(0xFFB24E)],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+
+    static let softAccent = LinearGradient(
+        colors: [tossColor(0x3478F6).opacity(0.28), tossColor(0x58C7FF).opacity(0.08), .clear],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let softWarm = LinearGradient(
+        colors: [tossColor(0xFF4A38).opacity(0.25), tossColor(0xFFB24E).opacity(0.07), .clear],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+}
+
+/// 레퍼런스처럼 광원을 상단에 모으고, 콘텐츠 영역은 블랙으로 가라앉힙니다.
+struct MusicBackdrop: View {
+    enum Tone {
+        case cool
+        case sunset
+    }
+
+    var tone: Tone = .cool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var animationOrigin = Date()
+    @State private var motionSeed = Double.random(in: 0 ..< (.pi * 2))
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: reduceMotion)) { timeline in
+            let elapsed = reduceMotion ? 0 : timeline.date.timeIntervalSince(animationOrigin)
+            animatedBackdrop(at: elapsed)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private func animatedBackdrop(at elapsed: TimeInterval) -> some View {
+        // 서로 다른 느린 파동을 섞어 반복 패턴이 쉽게 읽히지 않게 합니다.
+        // 화면이 열릴 때 정해지는 motionSeed 덕분에 매번 다른 위치에서 출발합니다.
+        let fieldX = organicWave(elapsed, speed: 0.50, phase: motionSeed)
+        let fieldY = organicWave(elapsed, speed: 0.42, phase: motionSeed + 1.7)
+        let fieldTurn = organicWave(elapsed, speed: 0.30, phase: motionSeed + 3.2)
+        let highlightX = organicWave(elapsed, speed: 0.72, phase: motionSeed + 0.8)
+        let highlightY = organicWave(elapsed, speed: 0.58, phase: motionSeed + 2.6)
+        let secondaryX = organicWave(elapsed, speed: 0.65, phase: motionSeed + 4.1)
+        let secondaryY = organicWave(elapsed, speed: 0.46, phase: motionSeed + 5.4)
+        let breathing = organicWave(elapsed, speed: 0.52, phase: motionSeed + 1.1)
+
+        return ZStack {
+            TossColor.background
+
+            LinearGradient(
+                gradient: Gradient(stops: fieldStops),
+                startPoint: UnitPoint(
+                    x: 0.88 + CGFloat(fieldX * 0.15),
+                    y: -0.04 + CGFloat(fieldY * 0.10)
+                ),
+                endPoint: UnitPoint(
+                    x: 0.48 - CGFloat(fieldX * 0.11),
+                    y: 1.02
+                )
+            )
+            .scaleEffect(1.14 + CGFloat(breathing * 0.045))
+            .rotationEffect(.degrees(fieldTurn * 4.0))
+            .blur(radius: 18)
+
+            RadialGradient(
+                colors: [
+                    highlightColor.opacity(0.90 + breathing * 0.09),
+                    highlightColor.opacity(0.22),
+                    .clear
+                ],
+                center: UnitPoint(
+                    x: 0.78 + CGFloat(highlightX * 0.17),
+                    y: -0.02 + CGFloat(highlightY * 0.13)
+                ),
+                startRadius: 0,
+                endRadius: 360 + CGFloat(breathing * 44)
+            )
+            .blur(radius: 22)
+
+            RadialGradient(
+                colors: [
+                    secondaryGlow.opacity(0.58 - breathing * 0.10),
+                    secondaryGlow.opacity(0.12),
+                    .clear
+                ],
+                center: UnitPoint(
+                    x: 0.10 + CGFloat(secondaryX * 0.19),
+                    y: 0.22 + CGFloat(secondaryY * 0.15)
+                ),
+                startRadius: 0,
+                endRadius: 420 - CGFloat(breathing * 46)
+            )
+            .blur(radius: 26)
+
+            LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: Color.black.opacity(0.34), location: 0.00),
+                    .init(color: Color.black.opacity(0.18), location: 0.30),
+                    .init(color: TossColor.background.opacity(0.12), location: 0.44),
+                    .init(color: TossColor.background.opacity(0.82), location: 0.63),
+                    .init(color: TossColor.background, location: 0.82)
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        }
+    }
+
+    /// 두 주파수와 무작위 위상을 합친 -1...1 범위의 유기적인 이동값.
+    private func organicWave(_ time: TimeInterval, speed: Double, phase: Double) -> Double {
+        let primary = sin((time * speed) + phase)
+        let secondary = sin((time * speed * 0.37) + (phase * 1.83))
+        return (primary * 0.72) + (secondary * 0.28)
+    }
+
+    private var fieldStops: [Gradient.Stop] {
+        switch tone {
+        case .cool:
+            [
+                .init(color: tossColor(0xC5E3FF), location: 0.00),
+                .init(color: tossColor(0x3977FF), location: 0.14),
+                .init(color: tossColor(0x173D9D), location: 0.32),
+                .init(color: tossColor(0x09142E), location: 0.52),
+                .init(color: TossColor.background, location: 0.76)
+            ]
+        case .sunset:
+            [
+                .init(color: tossColor(0xFFD07C), location: 0.00),
+                .init(color: tossColor(0xFF793F), location: 0.15),
+                .init(color: tossColor(0xF13F31), location: 0.32),
+                .init(color: tossColor(0x581820), location: 0.53),
+                .init(color: TossColor.background, location: 0.76)
+            ]
+        }
+    }
+
+    private var highlightColor: Color {
+        switch tone {
+        case .cool: tossColor(0xD8ECFF)
+        case .sunset: tossColor(0xFFE1A4)
+        }
+    }
+
+    private var secondaryGlow: Color {
+        switch tone {
+        case .cool: tossColor(0x11BBD4)
+        case .sunset: tossColor(0xFF342D)
+        }
+    }
 }
 
 /// 카테고리 마커/아이콘용 컬러. 어두운 배경 위에서 또렷하게 보이도록 밝기를 올린 계열.
@@ -88,7 +255,7 @@ enum CategoryPalette {
     }
 
     static let options: [Option] = [
-        Option(id: "blue", title: "블루", color: TossColor.blue),
+        Option(id: "blue", title: "일렉트릭 블루", color: TossColor.blue),
         Option(id: "violet", title: "바이올렛", color: tossColor(0x9A82F5)),
         Option(id: "teal", title: "틸", color: tossColor(0x2BC0C0)),
         Option(id: "green", title: "그린", color: tossColor(0x2BD68F)),
@@ -127,13 +294,13 @@ enum TossCategoryColor {
 
 // MARK: - Typography
 
-/// 토스식 타이포 스케일. 타이틀은 굵고 크게, 본문은 촘촘하게.
+/// Apple Music처럼 화면 제목은 크고 무겁게, 정보는 대비를 낮춰 계층을 만듭니다.
 enum TossFont {
     /// 화면 대표 타이틀
-    static let display = Font.system(size: 28, weight: .bold)
-    static let title1 = Font.system(size: 24, weight: .bold)
-    static let title2 = Font.system(size: 20, weight: .bold)
-    static let title3 = Font.system(size: 17, weight: .bold)
+    static let display = Font.system(size: 32, weight: .heavy)
+    static let title1 = Font.system(size: 27, weight: .bold)
+    static let title2 = Font.system(size: 21, weight: .bold)
+    static let title3 = Font.system(size: 18, weight: .bold)
 
     static let headline = Font.system(size: 16, weight: .semibold)
     static let body = Font.system(size: 15, weight: .regular)
@@ -152,11 +319,11 @@ enum TossFont {
 
 enum TossRadius {
     static let chip: CGFloat = 999
-    static let field: CGFloat = 12
-    static let button: CGFloat = 14
-    static let card: CGFloat = 18
-    static let sheet: CGFloat = 24
-    static let icon: CGFloat = 10
+    static let field: CGFloat = 14
+    static let button: CGFloat = 16
+    static let card: CGFloat = 22
+    static let sheet: CGFloat = 30
+    static let icon: CGFloat = 12
 }
 
 enum TossSpacing {
@@ -174,6 +341,8 @@ enum TossSize {
     static let controlHeight: CGFloat = 48
     static let compactControlHeight: CGFloat = 44
     static let chipHeight: CGFloat = 36
+    /// 지도 위에 얹는 칩. 지도를 덜 가리도록 한 단계 낮춥니다.
+    static let compactChipHeight: CGFloat = 34
     static let fieldHeight: CGFloat = 50
     static let iconBadge: CGFloat = 40
 }
@@ -185,11 +354,10 @@ enum TossMotion {
 
 // MARK: - Elevation
 
-/// 다크 배경에서는 그림자가 거의 보이지 않습니다.
-/// 카드는 헤어라인 한 줄로 경계를 잡고, 지도처럼 배경이 밝을 수 있는 곳에서만 그림자를 씁니다.
+/// 어두운 서피스 사이에도 깊이가 느껴지도록 넓고 옅은 그림자를 사용합니다.
 enum TossShadow {
     case none
-    /// 카드 — 그림자 없이 헤어라인만
+    /// 앨범·플레이리스트 카드 같은 부드러운 부양감
     case card
     /// 지도 위 떠 있는 컨트롤
     case floating
@@ -203,14 +371,17 @@ private struct TossShadowModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         switch style {
-        case .none, .card:
+        case .none:
             content
+        case .card:
+            content
+                .shadow(color: .black.opacity(0.26), radius: 18, y: 8)
         case .floating:
             content
-                .shadow(color: .black.opacity(0.34), radius: 12, y: 4)
+                .shadow(color: .black.opacity(0.38), radius: 16, y: 6)
         case .sheet:
             content
-                .shadow(color: .black.opacity(0.38), radius: 24, y: -6)
+                .shadow(color: .black.opacity(0.46), radius: 30, y: -8)
         }
     }
 }
@@ -232,10 +403,13 @@ private struct TossCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         return content
-            .background(fill, in: shape)
+            .background {
+                shape
+                    .fill(fill.opacity(0.96))
+            }
             .overlay {
                 if bordered {
-                    shape.strokeBorder(TossColor.line, lineWidth: 1)
+                    shape.strokeBorder(Color.white.opacity(0.12), lineWidth: 0.8)
                 }
             }
             .tossShadow(shadow)
@@ -257,8 +431,8 @@ private struct TossSheetSurfaceModifier: ViewModifier {
                 )
 
                 shape
-                    .fill(TossColor.surface)
-                    .overlay { shape.stroke(TossColor.line, lineWidth: 1) }
+                    .fill(TossColor.surface.opacity(0.97))
+                    .overlay { shape.stroke(Color.white.opacity(0.12), lineWidth: 0.8) }
                     .tossShadow(.sheet)
                     .ignoresSafeArea(edges: extendsBelowSafeArea ? Edge.Set.bottom : Edge.Set())
             }
@@ -285,8 +459,8 @@ extension View {
     }
 
     /// 화면 전체 배경.
-    func tossPageBackground() -> some View {
-        background(TossColor.background.ignoresSafeArea())
+    func tossPageBackground(tone: MusicBackdrop.Tone = .cool) -> some View {
+        background(MusicBackdrop(tone: tone).ignoresSafeArea())
     }
 }
 
@@ -318,8 +492,8 @@ private struct TossConcentricCardModifier: ViewModifier {
                 let shape = ConcentricRectangle(corners: .concentric(minimum: .fixed(minimumRadius)), isUniform: true)
 
                 shape
-                    .fill(fill)
-                    .overlay { shape.stroke(TossColor.line, lineWidth: 1) }
+                    .fill(fill.opacity(0.97))
+                    .overlay { shape.stroke(Color.white.opacity(0.12), lineWidth: 0.8) }
                     .tossShadow(shadow)
             }
     }
@@ -343,21 +517,40 @@ extension View {
 
 // MARK: - Buttons
 
-/// 꽉 찬 토스 블루 CTA.
+enum TossAccentTheme {
+    case cool
+    case warm
+
+    var gradient: LinearGradient {
+        switch self {
+        case .cool: MusicGradient.accent
+        case .warm: MusicGradient.warmAccent
+        }
+    }
+
+    var glow: Color {
+        switch self {
+        case .cool: TossColor.blue
+        case .warm: TossColor.red
+        }
+    }
+}
+
+/// 선명한 색을 CTA 한 곳에 집중합니다.
 struct TossPrimaryButtonStyle: ButtonStyle {
     var height: CGFloat = TossSize.ctaHeight
     var cornerRadius: CGFloat = TossRadius.button
-    var tint: Color = TossColor.blue
+    var accent: TossAccentTheme = .cool
 
     func makeBody(configuration: Configuration) -> some View {
-        StyleBody(configuration: configuration, height: height, cornerRadius: cornerRadius, tint: tint)
+        StyleBody(configuration: configuration, height: height, cornerRadius: cornerRadius, accent: accent)
     }
 
     private struct StyleBody: View {
         let configuration: ButtonStyleConfiguration
         let height: CGFloat
         let cornerRadius: CGFloat
-        let tint: Color
+        let accent: TossAccentTheme
 
         @Environment(\.isEnabled) private var isEnabled
 
@@ -367,9 +560,12 @@ struct TossPrimaryButtonStyle: ButtonStyle {
                 .foregroundStyle(isEnabled ? TossColor.textOnBlue : TossColor.textTertiary)
                 .frame(maxWidth: .infinity, minHeight: height)
                 .background(
-                    isEnabled ? tint : TossColor.fill,
+                    isEnabled
+                        ? AnyShapeStyle(accent.gradient)
+                        : AnyShapeStyle(TossColor.fill),
                     in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 )
+                .shadow(color: isEnabled ? accent.glow.opacity(0.24) : .clear, radius: 14, y: 6)
                 .opacity(configuration.isPressed ? 0.82 : 1)
                 .scaleEffect(configuration.isPressed ? 0.98 : 1)
                 .animation(TossMotion.quick, value: configuration.isPressed)
@@ -389,7 +585,14 @@ struct TossSecondaryButtonStyle: ButtonStyle {
             .font(TossFont.button)
             .foregroundStyle(foreground)
             .frame(maxWidth: .infinity, minHeight: height)
-            .background(background, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .background {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(background.opacity(0.96))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.8)
+                    }
+            }
             .opacity(configuration.isPressed ? 0.72 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(TossMotion.quick, value: configuration.isPressed)
@@ -406,7 +609,10 @@ struct TossTonalButtonStyle: ButtonStyle {
             .font(TossFont.button)
             .foregroundStyle(TossColor.blue)
             .frame(maxWidth: .infinity, minHeight: height)
-            .background(TossColor.blueWeak, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .background(
+                MusicGradient.softAccent,
+                in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            )
             .opacity(configuration.isPressed ? 0.72 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(TossMotion.quick, value: configuration.isPressed)
@@ -448,10 +654,11 @@ struct TossIconBadge: View {
             .font(.system(size: size * 0.42, weight: .semibold))
             .foregroundStyle(style == .filled ? Color.white : tint)
             .frame(width: size, height: size)
-            .background(
-                style == .filled ? tint : tint.opacity(0.12),
-                in: RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
-            )
+            .background {
+                RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
+                    .fill(style == .filled ? AnyShapeStyle(tint) : AnyShapeStyle(tint.opacity(0.15)))
+            }
+            .shadow(color: tint.opacity(style == .filled ? 0.24 : 0.10), radius: 10, y: 5)
     }
 }
 
@@ -475,11 +682,71 @@ struct TossChip: View {
             .foregroundStyle(isSelected ? TossColor.textOnBlue : TossColor.textSecondary)
             .padding(.horizontal, 14)
             .frame(minHeight: TossSize.chipHeight)
-            .background(isSelected ? TossColor.blue : TossColor.surfaceAlt, in: Capsule())
+            .background(
+                isSelected ? AnyShapeStyle(MusicGradient.accent) : AnyShapeStyle(TossColor.surfaceAlt),
+                in: Capsule()
+            )
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// 지도 위에 얹는 작은 캡슐 칩.
+///
+/// `TossChip`보다 한 단계 낮고 좁습니다. 지도 화면에서는 필터가 차지하는 세로 공간이
+/// 그대로 가려지는 지도 면적이라, 한 줄로 끝나는 크기를 따로 둡니다.
+struct TossCompactChip: View {
+    let title: String
+    var systemImage: String? = nil
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 11, weight: .bold))
+                }
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? TossColor.textOnBlue : TossColor.textSecondary)
+            .padding(.horizontal, 13)
+            .frame(height: TossSize.compactChipHeight)
+            .background {
+                Capsule()
+                    .fill(isSelected ? AnyShapeStyle(MusicGradient.accent) : AnyShapeStyle(.ultraThinMaterial))
+                    .overlay {
+                        if !isSelected { Capsule().fill(TossColor.floatingSurface.opacity(0.78)) }
+                    }
+                    .overlay {
+                        Capsule().strokeBorder(isSelected ? .clear : TossColor.line, lineWidth: 1)
+                    }
+                    .tossShadow(.floating)
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(TossScaleButtonStyle())
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct TossTextContrastModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .shadow(color: .black.opacity(0.92), radius: 1.5, y: 1)
+            .shadow(color: .black.opacity(0.54), radius: 6, y: 2)
+    }
+}
+
+extension View {
+    /// 사진·지도·오로라처럼 밝기가 변하는 배경 위 텍스트의 외곽 대비를 확보합니다.
+    func tossTextContrast() -> some View {
+        modifier(TossTextContrastModifier())
     }
 }
 
@@ -493,11 +760,19 @@ struct TossSectionHeader: View {
             Text(title)
                 .font(TossFont.title3)
                 .foregroundStyle(TossColor.textPrimary)
+                .tossTextContrast()
             Spacer(minLength: TossSpacing.s)
             if let trailing {
                 Text(trailing)
-                    .font(TossFont.caption)
-                    .foregroundStyle(TossColor.textTertiary)
+                    .font(TossFont.captionStrong)
+                    .foregroundStyle(TossColor.textPrimary)
+                    .lineLimit(1)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(TossColor.surfaceAlt, in: Capsule())
+                    .overlay {
+                        Capsule().strokeBorder(TossColor.line, lineWidth: 1)
+                    }
             }
         }
     }
@@ -565,6 +840,8 @@ struct TossFloatingCircleButton: View {
     let label: String
     var showsProgress = false
     var size: CGFloat = TossSize.compactControlHeight
+    /// 지금 눌러야 할 버튼이라는 걸 알릴 때 채웁니다. nil이면 평소의 뉴트럴 서피스입니다.
+    var tint: Color? = nil
     let action: () -> Void
 
     var body: some View {
@@ -573,16 +850,20 @@ struct TossFloatingCircleButton: View {
                 if showsProgress {
                     ProgressView()
                         .controlSize(.small)
-                        .tint(TossColor.textSecondary)
+                        .tint(tint == nil ? TossColor.textSecondary : TossColor.textOnBlue)
                 } else {
                     Image(systemName: systemName)
                         .font(.system(size: size * 0.4, weight: .semibold))
-                        .foregroundStyle(TossColor.textPrimary)
+                        .foregroundStyle(tint == nil ? TossColor.textPrimary : TossColor.textOnBlue)
                 }
             }
             .frame(width: size, height: size)
-            .background(TossColor.floatingSurface, in: Circle())
-            .overlay { Circle().strokeBorder(TossColor.line, lineWidth: 1) }
+            .background(
+                tint.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.ultraThinMaterial),
+                in: Circle()
+            )
+            .background(tint == nil ? TossColor.floatingSurface.opacity(0.72) : .clear, in: Circle())
+            .overlay { Circle().strokeBorder(tint == nil ? TossColor.line : .clear, lineWidth: 1) }
             .tossShadow(.floating)
             .contentShape(Circle())
         }

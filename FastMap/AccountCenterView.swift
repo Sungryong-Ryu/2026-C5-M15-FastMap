@@ -5,9 +5,9 @@ import SwiftUI
 struct AccountCenterView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var accountManager: AccountManager
-    @EnvironmentObject private var savedPlacesStore: SavedPlacesStore
+    @EnvironmentObject private var savedCafeStore: SavedCafeStore
     @EnvironmentObject private var locationService: LocationService
-    @EnvironmentObject private var store: FastMapStore
+    @EnvironmentObject private var store: CafeStore
     @EnvironmentObject private var profileStore: ProfileStore
 
     @State private var isShowingProfileEditor = false
@@ -19,7 +19,7 @@ struct AccountCenterView: View {
                     profileCard
 
                     if accountManager.account != nil {
-                        savedPlacesSection
+                        savedCafesSection
                         signOutSection
                     } else {
                         signInSection
@@ -30,11 +30,11 @@ struct AccountCenterView: View {
                 .padding(.bottom, TossSpacing.xxl)
             }
             .scrollIndicators(.hidden)
-            .tossPageBackground()
+            .tossPageBackground(tone: .sunset)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("내 FastMap")
+                    Text("내 CoFFMap")
                         .font(TossFont.title3)
                         .foregroundStyle(TossColor.textPrimary)
                 }
@@ -44,7 +44,7 @@ struct AccountCenterView: View {
                         .foregroundStyle(TossColor.textSecondary)
                 }
             }
-            .toolbarBackground(TossColor.background, for: .navigationBar)
+            .toolbarBackground(TossColor.background.opacity(0.88), for: .navigationBar)
             .toolbarBackgroundVisibility(.visible, for: .navigationBar)
             .sheet(isPresented: $isShowingProfileEditor) {
                 ProfileEditorView()
@@ -62,6 +62,12 @@ struct AccountCenterView: View {
         } label: {
             HStack(spacing: TossSpacing.l) {
                 ProfileAvatarView(profile: profileStore.profile, photo: profileStore.photo, size: 64)
+                    .overlay {
+                        Circle()
+                            .stroke(MusicGradient.warmAccent, lineWidth: 2.5)
+                            .padding(-3)
+                    }
+                    .shadow(color: TossColor.red.opacity(0.28), radius: 16, y: 6)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(profileStore.profile.displayName(fallback: accountManager.account?.displayName))
@@ -81,6 +87,7 @@ struct AccountCenterView: View {
                     .foregroundStyle(TossColor.textTertiary)
             }
             .padding(TossSpacing.l)
+            .background(MusicGradient.softWarm, in: RoundedRectangle(cornerRadius: TossRadius.card, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -92,32 +99,32 @@ struct AccountCenterView: View {
             return email
         }
         if accountManager.account != nil {
-            return savedPlacesStore.syncState.text
+            return savedCafeStore.syncState.text
         }
         return "프로필을 눌러 사진이나 이모지로 꾸며 보세요"
     }
 
-    // MARK: - 저장한 장소
+    // MARK: - 저장한 카페
 
-    private var savedPlacesSection: some View {
+    private var savedCafesSection: some View {
         VStack(alignment: .leading, spacing: TossSpacing.m) {
             TossSectionHeader(
-                title: "저장한 장소",
-                trailing: savedPlacesStore.places.isEmpty ? nil : "\(savedPlacesStore.places.count)곳"
+                title: "저장한 카페",
+                trailing: savedCafeStore.cafes.isEmpty ? nil : "\(savedCafeStore.cafes.count)곳"
             )
 
             VStack(spacing: 0) {
-                if savedPlacesStore.places.isEmpty {
+                if savedCafeStore.cafes.isEmpty {
                     TossEmptyState(
                         systemImage: "bookmark",
-                        title: "아직 저장한 장소가 없어요",
-                        message: "장소 목록의 북마크 버튼을 눌러\n자주 가는 곳을 저장해 보세요."
+                        title: "아직 저장한 카페가 없어요",
+                        message: "카페 목록의 북마크 버튼을 눌러\n자주 가는 곳을 저장해 보세요."
                     )
                 } else {
-                    ForEach(Array(savedPlacesStore.places.enumerated()), id: \.element.id) { index, place in
-                        savedPlaceRow(place)
+                    ForEach(Array(savedCafeStore.cafes.enumerated()), id: \.element.id) { index, cafe in
+                        savedCafeRow(cafe)
 
-                        if index < savedPlacesStore.places.count - 1 {
+                        if index < savedCafeStore.cafes.count - 1 {
                             TossDivider(leadingInset: 68)
                         }
                     }
@@ -128,21 +135,21 @@ struct AccountCenterView: View {
         }
     }
 
-    private func savedPlaceRow(_ place: Place) -> some View {
+    private func savedCafeRow(_ cafe: Cafe) -> some View {
         HStack(spacing: 0) {
             Button {
-                let updatedPlace = place.rebased(from: locationService.currentLocation)
+                let updatedCafe = cafe.rebased(from: locationService.currentLocation)
                 Task {
-                    await store.select(updatedPlace, from: locationService.currentLocation)
+                    await store.select(updatedCafe, from: locationService.currentLocation)
                     dismiss()
                 }
             } label: {
-                SavedPlaceRow(place: place)
+                SavedCafeRow(cafe: cafe)
             }
             .buttonStyle(TossPressableStyle(cornerRadius: TossRadius.field))
 
             Button {
-                Task { await savedPlacesStore.remove(place) }
+                Task { await savedCafeStore.remove(cafe) }
             } label: {
                 Image(systemName: "trash")
                     .font(.system(size: 15, weight: .semibold))
@@ -151,7 +158,7 @@ struct AccountCenterView: View {
                     .contentShape(Circle())
             }
             .buttonStyle(TossScaleButtonStyle())
-            .accessibilityLabel("\(place.name) 저장 취소")
+            .accessibilityLabel("\(cafe.name) 저장 취소")
         }
         .padding(.trailing, TossSpacing.s)
     }
@@ -168,7 +175,7 @@ struct AccountCenterView: View {
                 )
             )
 
-            Text("로그아웃해도 iCloud에 저장된 장소는 삭제되지 않아요.")
+            Text("로그아웃해도 iCloud에 저장된 카페는 삭제되지 않아요.")
                 .font(TossFont.footnote)
                 .foregroundStyle(TossColor.textTertiary)
                 .padding(.horizontal, TossSpacing.xxs)
@@ -179,17 +186,26 @@ struct AccountCenterView: View {
 
     private var signInSection: some View {
         VStack(alignment: .leading, spacing: TossSpacing.l) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 58, height: 58)
+                .background(MusicGradient.warmAccent, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: TossColor.red.opacity(0.28), radius: 18, y: 8)
+
             VStack(alignment: .leading, spacing: TossSpacing.s) {
-                Text("자주 가는 곳,\n저장해 두세요")
+                Text("좋아하는 카페,\n저장해 두세요")
                     .font(TossFont.title1)
                     .foregroundStyle(TossColor.textPrimary)
                     .lineSpacing(2)
                     .fixedSize(horizontal: false, vertical: true)
+                    .tossTextContrast()
 
-                Text("Apple 계정으로 로그인하면 장소를 저장하고\n같은 iCloud 계정의 기기에서 이어서 볼 수 있어요.")
+                Text("Apple 계정으로 로그인하면 카페를 저장하고\n같은 iCloud 계정의 기기에서 이어서 볼 수 있어요.")
                     .font(TossFont.body)
                     .foregroundStyle(TossColor.textSecondary)
                     .lineSpacing(3)
+                    .tossTextContrast()
             }
 
             if let errorMessage = accountManager.errorMessage {
@@ -212,19 +228,23 @@ struct AccountCenterView: View {
     }
 }
 
-private struct SavedPlaceRow: View {
-    let place: Place
+private struct SavedCafeRow: View {
+    let cafe: Cafe
 
     var body: some View {
         HStack(spacing: TossSpacing.m) {
-            TossIconBadge(systemName: place.category.symbolName, tint: place.category.tint, size: 44)
+            TossIconBadge(
+                systemName: cafe.orderedTags.first?.symbolName ?? "cup.and.saucer.fill",
+                tint: cafe.orderedTags.first?.tint ?? TossCategoryColor.brown,
+                size: 44
+            )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(place.name)
+                Text(cafe.name)
                     .font(TossFont.headline)
                     .foregroundStyle(TossColor.textPrimary)
                     .lineLimit(1)
-                Text(place.address)
+                Text(cafe.displayAddress)
                     .font(TossFont.caption)
                     .foregroundStyle(TossColor.textSecondary)
                     .lineLimit(1)
@@ -242,16 +262,23 @@ private struct SavedPlaceRow: View {
     }
 }
 
-private extension Place {
-    func rebased(from origin: CLLocationCoordinate2D) -> Place {
-        Place(
+/// 저장해 둔 카페는 거리·방위가 저장 당시 값이라 0입니다.
+/// 목록에서 다시 고를 때 현위치 기준으로 계산해 줍니다.
+private extension Cafe {
+    func rebased(from origin: CLLocationCoordinate2D) -> Cafe {
+        Cafe(
             id: id,
             name: name,
-            category: category,
             address: address,
+            roadAddress: roadAddress,
+            phone: phone,
+            categoryName: categoryName,
+            placeURL: placeURL,
             coordinate: coordinate,
             distanceMeters: GeoMath.distanceMeters(from: origin, to: coordinate),
-            bearingDegrees: GeoMath.bearingDegrees(from: origin, to: coordinate)
+            bearingDegrees: GeoMath.bearingDegrees(from: origin, to: coordinate),
+            tags: tags,
+            source: source
         )
     }
 }

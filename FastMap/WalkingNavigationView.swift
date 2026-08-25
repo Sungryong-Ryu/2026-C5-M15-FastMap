@@ -1,36 +1,67 @@
 import MapKit
 import SwiftUI
+import UIKit
+
+private enum WalkingNavigationSheet: String, Identifiable {
+    case routeSteps
+    case musicConnection
+
+    var id: String { rawValue }
+}
 
 struct WalkingNavigationView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var navigation: WalkingNavigationController
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var liveActivityController: LiveActivityController
+    @EnvironmentObject private var store: CafeStore
 
     @State private var cameraPosition: MapCameraPosition = .automatic
-    @State private var isShowingSteps = false
+    @State private var isFollowingUser = true
+    @State private var presentedSheet: WalkingNavigationSheet?
+    @StateObject private var music = NavigationMusicController()
 
     var body: some View {
         ZStack {
             navigationMap
 
-            VStack(spacing: TossSpacing.m) {
+            VStack(spacing: TossSpacing.s) {
                 instructionCard
                 Spacer(minLength: 0)
                 recenterButton
                 bottomCard
             }
             .safeAreaPadding(.horizontal, TossEdge.screenInset)
-            .safeAreaPadding(.vertical, TossEdge.bottomInset)
+            .safeAreaPadding(.top, TossSpacing.s)
+            .safeAreaPadding(.bottom, TossEdge.bottomInset)
         }
         .onAppear {
             focusOnUser()
+            music.startObserving()
         }
-        .sheet(isPresented: $isShowingSteps) {
-            routeStepsSheet
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(TossRadius.sheet)
+        .onDisappear { music.stopObserving() }
+        .onChange(of: locationService.currentLocation) { _, _ in
+            updateFollowingCamera()
+        }
+        .onChange(of: locationService.navigationHeadingDegrees) { _, _ in
+            updateFollowingCamera()
+        }
+        .onChange(of: cameraPosition.positionedByUser) { _, positionedByUser in
+            if positionedByUser { isFollowingUser = false }
+        }
+        .sheet(item: $presentedSheet) { sheet in
+            switch sheet {
+            case .routeSteps:
+                routeStepsSheet
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(TossRadius.sheet)
+            case .musicConnection:
+                MusicConnectionSheet(music: music)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(TossRadius.sheet)
+            }
         }
     }
 
@@ -58,77 +89,86 @@ struct WalkingNavigationView: View {
     // MARK: - Top instruction
 
     private var instructionCard: some View {
-        VStack(alignment: .leading, spacing: TossSpacing.m) {
-            HStack(spacing: TossSpacing.l) {
-                // 다음 동작 아이콘. 다이나믹 아일랜드와 같은 기호를 씁니다.
-                Image(systemName: navigation.upcomingManeuvers.first?.symbolName ?? "arrow.up")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(TossColor.textOnBlue)
-                    .frame(width: 52, height: 52)
-                    .background(TossColor.blue, in: Circle())
+        HStack(spacing: TossSpacing.m) {
+            Image(systemName: currentStepSymbol)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(TossColor.textOnBlue)
+                .frame(width: 40, height: 40)
+                .background(MusicGradient.accent, in: Circle())
+                .shadow(color: TossColor.blue.opacity(0.30), radius: 12, y: 5)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(navigation.isRerouting ? "경로 재탐색 중" : GeoMath.formattedDistance(navigation.distanceToManeuver))
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: TossSpacing.s) {
+                    Label(
+                        WalkingNavigationController.formattedTime(navigation.remainingTravelTime),
+                        systemImage: "clock.fill"
+                    )
                         .font(TossFont.captionStrong)
                         .foregroundStyle(TossColor.blue)
+                        .monospacedDigit()
 
-                    Text(navigation.currentInstruction)
-                        .font(TossFont.title3)
-                        .foregroundStyle(TossColor.textPrimary)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.82)
+                    Capsule()
+                        .fill(TossColor.separator)
+                        .frame(width: 1, height: 11)
+
+                    Label(
+                        GeoMath.formattedDistance(navigation.remainingDistance),
+                        systemImage: "location.fill"
+                    )
+                    .font(TossFont.captionStrong)
+                    .foregroundStyle(TossColor.textSecondary)
+                    .monospacedDigit()
+
+                    Spacer(minLength: 2)
+                    compactManeuverStrip
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
 
-                // 목적지 방향을 가리키는 나침반. 걸을 때 방향 감을 잡는 용도입니다.
-                Image(systemName: "location.north.fill")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(TossColor.blue)
-                    .frame(width: 34, height: 34)
-                    .background(TossColor.blueWeak, in: Circle())
-                    .rotationEffect(.degrees(navigation.arrowRotation(
-                        deviceHeadingDegrees: locationService.headingDegrees,
-                        from: locationService.currentLocation
-                    )))
-                    .animation(TossMotion.quick, value: locationService.headingDegrees)
-                    .accessibilityLabel("목적지 방향")
+                Text(
+                    navigation.isRerouting
+                        ? navigation.currentInstruction
+                        : "\(GeoMath.formattedDistance(navigation.distanceToManeuver)) 후 · \(navigation.currentInstruction)"
+                )
+                    .font(TossFont.bodyStrong)
+                    .foregroundStyle(TossColor.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.78)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 다이나믹 아일랜드와 같은 순서로 앞으로 올 동작을 미리 보여 줍니다.
-            if navigation.upcomingManeuvers.count > 1 {
-                maneuverStrip
-            }
+            Image(systemName: "location.north.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(TossColor.blue)
+                .frame(width: 30, height: 30)
+                .background(TossColor.blueWeak, in: Circle())
+                .rotationEffect(.degrees(navigation.arrowRotation(
+                    deviceHeadingDegrees: locationService.navigationHeadingDegrees,
+                    from: locationService.currentLocation
+                )))
+                .animation(TossMotion.quick, value: locationService.navigationHeadingDegrees)
+                .accessibilityLabel("목적지 방향")
         }
-        .padding(TossSpacing.l)
+        .padding(TossSpacing.m)
         .tossConcentricCard()
     }
 
-    private var maneuverStrip: some View {
-        HStack(spacing: TossSpacing.s) {
-            ForEach(Array(navigation.upcomingManeuvers.enumerated()), id: \.offset) { offset, maneuver in
+    private var compactManeuverStrip: some View {
+        HStack(spacing: TossSpacing.xs) {
+            ForEach(Array(navigation.upcomingManeuvers.dropFirst().prefix(3).enumerated()), id: \.offset) { _, maneuver in
                 Image(systemName: maneuver.symbolName)
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(offset == 0 ? TossColor.blue : TossColor.textTertiary)
-                    .frame(width: 30, height: 30)
-                    .background(
-                        offset == 0 ? TossColor.blueWeak : TossColor.surfaceAlt,
-                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    )
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(TossColor.textTertiary)
                     .accessibilityLabel(maneuver.title)
-
-                if offset < navigation.upcomingManeuvers.count - 1 {
-                    Image(systemName: "chevron.compact.right")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(TossColor.textTertiary)
-                }
             }
-
-            Spacer(minLength: 0)
         }
     }
 
     private var recenterButton: some View {
-        TossFloatingCircleButton(systemName: "location.fill", label: "현재 위치 따라가기") {
+        TossFloatingCircleButton(
+            systemName: isFollowingUser ? "location.fill" : "location.north.fill",
+            label: "현재 위치와 방향 따라가기",
+            size: 38,
+            tint: isFollowingUser ? nil : TossColor.blue
+        ) {
             focusOnUser()
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -137,21 +177,48 @@ struct WalkingNavigationView: View {
     // MARK: - Bottom card
 
     private var bottomCard: some View {
-        VStack(spacing: TossSpacing.l) {
-            HStack(alignment: .firstTextBaseline, spacing: TossSpacing.s) {
-                Text(WalkingNavigationController.formattedTime(navigation.remainingTravelTime))
-                    .font(TossFont.display)
-                    .foregroundStyle(TossColor.textPrimary)
+        VStack(spacing: TossSpacing.s) {
+            navigationModePicker
 
-                Text("남음")
-                    .font(TossFont.callout)
-                    .foregroundStyle(TossColor.textSecondary)
+            HStack(spacing: TossSpacing.s) {
+                if let route = navigation.route {
+                    Label(route.provider.title, systemImage: navigation.mode.systemImage)
+                        .font(TossFont.captionStrong)
+                        .foregroundStyle(TossColor.textSecondary)
+                        .padding(.horizontal, TossSpacing.s)
+                        .frame(height: 28)
+                        .background(MusicGradient.softAccent, in: Capsule())
+                }
 
-                Spacer(minLength: 0)
+                Spacer(minLength: TossSpacing.xs)
 
-                Text(GeoMath.formattedDistance(navigation.remainingDistance))
-                    .font(TossFont.headline)
-                    .foregroundStyle(TossColor.textSecondary)
+                compactActionButton(
+                    systemName: "list.bullet",
+                    label: "경로 목록",
+                    foreground: TossColor.textPrimary,
+                    background: TossColor.surfaceAlt
+                ) {
+                    presentedSheet = .routeSteps
+                }
+
+                compactActionButton(
+                    systemName: "xmark",
+                    label: "길안내 종료",
+                    foreground: TossColor.red,
+                    background: TossColor.redWeak
+                ) {
+                    Task { await endNavigation() }
+                }
+            }
+
+            musicBar
+
+            if let detailText = navigation.route?.detailText {
+                Text(detailText)
+                    .font(TossFont.footnote)
+                    .foregroundStyle(TossColor.textTertiary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if let errorMessage = navigation.errorMessage {
@@ -161,31 +228,126 @@ struct WalkingNavigationView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            HStack(spacing: TossSpacing.s) {
-                Button {
-                    isShowingSteps = true
-                } label: {
-                    Label("경로 목록", systemImage: "list.bullet")
-                        .lineLimit(1)
-                }
-                .buttonStyle(TossSecondaryButtonStyle())
+        }
+        .padding(TossSpacing.m)
+        .tossConcentricCard()
+    }
 
+    private var navigationModePicker: some View {
+        HStack(spacing: TossSpacing.xs) {
+            ForEach(NavigationMode.allCases) { mode in
                 Button {
-                    Task { await endNavigation() }
+                    Task { await changeMode(to: mode) }
                 } label: {
-                    Text("길안내 종료")
-                        .lineLimit(1)
-                }
-                .buttonStyle(
-                    TossSecondaryButtonStyle(
-                        foreground: TossColor.red,
-                        background: TossColor.redWeak
+                    HStack(spacing: 3) {
+                        Image(systemName: mode.systemImage)
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(mode.title)
+                            .font(TossFont.captionStrong)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                    .foregroundStyle(navigation.mode == mode ? TossColor.blue : TossColor.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 32)
+                    .background(
+                        navigation.mode == mode
+                            ? AnyShapeStyle(MusicGradient.softAccent)
+                            : AnyShapeStyle(TossColor.surfaceAlt),
+                        in: Capsule()
                     )
-                )
+                }
+                .buttonStyle(TossScaleButtonStyle())
+                .disabled(navigation.isRerouting || navigation.mode == mode)
+                .accessibilityLabel("\(mode.title) 경로로 변경")
+                .accessibilityAddTraits(navigation.mode == mode ? .isSelected : [])
             }
         }
-        .padding(TossSpacing.xl)
-        .tossConcentricCard()
+    }
+
+    private var musicBar: some View {
+        HStack(spacing: TossSpacing.s) {
+            Group {
+                if let artwork = music.artwork {
+                    Image(uiImage: artwork)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Image(systemName: music.isOtherAudioPlaying ? "waveform" : "music.note")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(TossColor.blue)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(TossColor.blueWeak)
+                }
+            }
+            .frame(width: 34, height: 34)
+            .clipShape(RoundedRectangle(cornerRadius: TossRadius.icon, style: .continuous))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(music.title)
+                    .font(TossFont.bodyStrong)
+                    .foregroundStyle(TossColor.textPrimary)
+                    .lineLimit(1)
+                Text(music.artist)
+                    .font(TossFont.footnote)
+                    .foregroundStyle(TossColor.textSecondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if music.canControlMusic {
+                HStack(spacing: TossSpacing.s) {
+                    Button(action: music.skipToPrevious) {
+                        Image(systemName: "backward.fill")
+                    }
+                    Button(action: music.togglePlayback) {
+                        Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
+                    }
+                    Button(action: music.skipToNext) {
+                        Image(systemName: "forward.fill")
+                    }
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(TossColor.textPrimary)
+                .buttonStyle(.plain)
+            } else {
+                Button("연결") { presentedSheet = .musicConnection }
+                    .font(TossFont.buttonSmall)
+                    .foregroundStyle(TossColor.blue)
+                    .buttonStyle(.plain)
+            }
+        }
+        .padding(TossSpacing.xs)
+        .background {
+            RoundedRectangle(cornerRadius: TossRadius.field, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: TossRadius.field, style: .continuous)
+                        .fill(TossColor.surfaceAlt.opacity(0.72))
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: TossRadius.field, style: .continuous)
+                        .fill(MusicGradient.softAccent)
+                }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func compactActionButton(
+        systemName: String,
+        label: String,
+        foreground: Color,
+        background: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(foreground)
+                .frame(width: 34, height: 34)
+                .background(background, in: Circle())
+        }
+        .buttonStyle(TossScaleButtonStyle())
+        .accessibilityLabel(label)
     }
 
     // MARK: - Steps sheet
@@ -217,17 +379,17 @@ struct WalkingNavigationView: View {
                         .foregroundStyle(TossColor.textPrimary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("완료") { isShowingSteps = false }
+                    Button("완료") { presentedSheet = nil }
                         .font(TossFont.headline)
                         .foregroundStyle(TossColor.blue)
                 }
             }
-            .toolbarBackground(TossColor.background, for: .navigationBar)
+            .toolbarBackground(TossColor.background.opacity(0.88), for: .navigationBar)
             .toolbarBackgroundVisibility(.visible, for: .navigationBar)
         }
     }
 
-    private func routeStepRow(index: Int, step: MKRoute.Step) -> some View {
+    private func routeStepRow(index: Int, step: NavigationRouteStep) -> some View {
         let isComplete = index < navigation.currentStepIndex
         let isCurrent = index == navigation.currentStepIndex
 
@@ -238,7 +400,7 @@ struct WalkingNavigationView: View {
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(step.instructions.isEmpty ? "경로를 따라 이동" : step.instructions)
+                Text(step.instruction.isEmpty ? "경로를 따라 이동" : step.instruction)
                     .font(isCurrent ? TossFont.bodyStrong : TossFont.body)
                     .foregroundStyle(isComplete ? TossColor.textTertiary : TossColor.textPrimary)
 
@@ -253,20 +415,70 @@ struct WalkingNavigationView: View {
     }
 
     private func focusOnUser() {
-        cameraPosition = .userLocation(
-            followsHeading: true,
-            fallback: .region(
-                MKCoordinateRegion(
-                    center: locationService.currentLocation,
-                    span: .init(latitudeDelta: 0.006, longitudeDelta: 0.006)
-                )
+        isFollowingUser = true
+        cameraPosition = .camera(
+            MapCamera(
+                centerCoordinate: locationService.currentLocation,
+                distance: navigationCameraDistance,
+                heading: locationService.navigationHeadingDegrees,
+                pitch: 48
             )
         )
     }
 
+    private func updateFollowingCamera() {
+        guard isFollowingUser else { return }
+        cameraPosition = .camera(
+            MapCamera(
+                centerCoordinate: locationService.currentLocation,
+                distance: navigationCameraDistance,
+                heading: locationService.navigationHeadingDegrees,
+                pitch: 48
+            )
+        )
+    }
+
+    private var navigationCameraDistance: CLLocationDistance {
+        switch navigation.mode {
+        case .walking: 480
+        case .bicycle: 650
+        case .automobile: 900
+        case .transit: 780
+        }
+    }
+
+    private var currentStepSymbol: String {
+        if navigation.mode == .transit,
+           navigation.steps.indices.contains(navigation.currentStepIndex),
+           let symbol = navigation.steps[navigation.currentStepIndex].systemImage {
+            return symbol
+        }
+        return navigation.upcomingManeuvers.first?.symbolName ?? navigation.mode.systemImage
+    }
+
+    private func changeMode(to mode: NavigationMode) async {
+        await navigation.changeMode(to: mode, from: locationService.currentLocation)
+        locationService.startNavigationUpdates(for: navigation.mode)
+        focusOnUser()
+
+        guard let cafe = navigation.destination, var snapshot = navigation.snapshot else { return }
+        snapshot = snapshot.withArrowRotation(
+            navigation.arrowRotation(
+                deviceHeadingDegrees: locationService.headingDegrees,
+                from: locationService.currentLocation
+            )
+        )
+        await liveActivityController.updateNavigation(cafe: cafe, snapshot: snapshot)
+    }
+
     private func endNavigation() async {
         navigation.stop()
-        locationService.startEfficientUpdates()
+        // 촘촘한 거리 필터(50~500m)를 켜 뒀을 때만 정밀 갱신으로 돌아갑니다.
+        if store.needsPreciseLocation {
+            locationService.startProximityUpdates()
+        } else {
+            locationService.startEfficientUpdates()
+        }
         await liveActivityController.end()
         dismiss()
     }

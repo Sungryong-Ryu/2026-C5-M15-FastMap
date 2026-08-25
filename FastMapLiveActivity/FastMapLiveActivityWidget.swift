@@ -7,43 +7,41 @@ struct FastMapLiveActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: FastMapActivityAttributes.self) { context in
             LockScreenActivityView(state: context.state)
-                .activityBackgroundTint(Color(.systemBackground))
+                .activityBackgroundTint(TossWidgetColor.background)
                 .activitySystemActionForegroundColor(TossWidgetColor.blue)
         } dynamicIsland: { context in
             DynamicIsland {
-                // 확장 영역은 좌우 끝과 아래쪽 모서리 곡률이 커서, 기본 여백만으로는
-                // 아이콘과 글자가 잘립니다. contentMargins로 안전 여백을 넉넉히 잡습니다.
                 DynamicIslandExpandedRegion(.leading) {
-                    ManeuverStrip(
-                        maneuvers: Array(context.state.maneuvers.prefix(2)),
-                        firstIndex: 0,
+                    IslandMetric(
+                        systemName: "clock.fill",
+                        text: context.state.displayRemainingTimeText,
                         alignment: .leading
                     )
+                    .dynamicIsland(verticalPlacement: .belowIfTooWide)
                 }
-                .contentMargins(.leading, DynamicIslandMetrics.sideMargin)
-                .contentMargins(.vertical, DynamicIslandMetrics.stripVerticalMargin)
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    ManeuverStrip(
-                        maneuvers: Array(context.state.maneuvers.dropFirst(2).prefix(2)),
-                        firstIndex: 2,
+                    IslandMetric(
+                        systemName: "location.fill",
+                        text: context.state.distanceText,
                         alignment: .trailing
                     )
+                    .dynamicIsland(verticalPlacement: .belowIfTooWide)
                 }
-                .contentMargins(.trailing, DynamicIslandMetrics.sideMargin)
-                .contentMargins(.vertical, DynamicIslandMetrics.stripVerticalMargin)
 
                 DynamicIslandExpandedRegion(.bottom) {
                     NavigationSummary(state: context.state)
                 }
-                .contentMargins(.horizontal, DynamicIslandMetrics.bottomSideMargin)
             } compactLeading: {
-                Image(systemName: context.state.leadingManeuver.symbolName)
-                    .font(.system(size: 14, weight: .bold))
+                Text(context.state.compactRemainingTimeText)
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(TossWidgetColor.blue)
-                    .padding(.leading, 2)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: 43, alignment: .leading)
             } compactTrailing: {
-                Text(context.state.headlineDistanceText)
+                Text(context.state.distanceText)
                     .font(.caption2.weight(.bold))
                     .monospacedDigit()
                     .lineLimit(1)
@@ -62,27 +60,13 @@ struct FastMapLiveActivityWidget: Widget {
 
 // MARK: - 여백과 크기
 
-/// 다이나믹 아일랜드의 둥근 모서리를 피하기 위한 값들.
+/// 확장형 다이나믹 아일랜드를 160pt 안쪽에 유지하기 위한 값들.
 private enum DynamicIslandMetrics {
-    /// 좌우 확장 영역이 바깥 모서리에서 떨어질 거리.
-    static let sideMargin: Double = 22
-    /// 동작 아이콘 줄이 위쪽 모서리에 닿지 않도록 하는 여백.
-    static let stripVerticalMargin: Double = 8
-
-    /// 아래 영역 좌우 여백.
-    static let bottomSideMargin: Double = 14
     /// 마지막 줄과 아일랜드 바닥 사이 거리.
-    /// 아래 두 모서리는 곡률이 커서, 이만큼 띄워야 글자가 곡선에 물리지 않습니다.
-    static let bottomBreathingRoom: CGFloat = 22
+    /// 시스템 기본 content margin에 더하는 작은 여백만 사용합니다.
+    static let bottomBreathingRoom: CGFloat = 8
     /// 좌우 모서리 곡선에서 가장 가까운 마지막 줄에만 추가로 주는 안쪽 여백.
-    static let lastLineSideInset: CGFloat = 10
-
-    /// 아래 영역이 최소한 확보하는 높이.
-    /// 이 값이 곧 아일랜드의 세로 길이를 결정합니다. 잘리는 것보다 큰 편이 낫습니다.
-    static let bottomMinHeight: CGFloat = 116
-
-    static let maneuverSize: CGFloat = 19
-    static let maneuverSpacing: CGFloat = 16
+    static let lastLineSideInset: CGFloat = 4
 }
 
 // MARK: - 상태 도우미
@@ -103,27 +87,37 @@ private extension FastMapActivityAttributes.ContentState {
         guard let remainingTimeText else { return distanceText }
         return "\(remainingTimeText) · \(distanceText)"
     }
+
+    var displayRemainingTimeText: String {
+        remainingTimeText ?? "계산 중"
+    }
+
+    var compactRemainingTimeText: String {
+        displayRemainingTimeText.replacingOccurrences(of: "약 ", with: "")
+    }
 }
 
-// MARK: - 동작 아이콘 줄
+// MARK: - 확장 영역 지표
 
-private struct ManeuverStrip: View {
-    let maneuvers: [WalkingManeuver]
-    /// 전체 목록에서 몇 번째부터인지. 0번만 또렷하게 그립니다.
-    let firstIndex: Int
+private struct IslandMetric: View {
+    let systemName: String
+    let text: String
     let alignment: Alignment
 
     var body: some View {
-        HStack(spacing: DynamicIslandMetrics.maneuverSpacing) {
-            ForEach(Array(maneuvers.enumerated()), id: \.offset) { offset, maneuver in
-                Image(systemName: maneuver.symbolName)
-                    .font(.system(size: DynamicIslandMetrics.maneuverSize, weight: .bold))
-                    .foregroundStyle(firstIndex + offset == 0 ? Color.white : Color.white.opacity(0.38))
-                    .accessibilityLabel(maneuver.title)
-            }
+        HStack(spacing: 4) {
+            Image(systemName: systemName)
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(TossWidgetColor.blue)
+            Text(text)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
+                .allowsTightening(true)
         }
         .frame(maxWidth: .infinity, alignment: alignment)
-        .padding(.vertical, 4)
     }
 }
 
@@ -133,32 +127,45 @@ private struct NavigationSummary: View {
     let state: FastMapActivityAttributes.ContentState
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(state.headlineDistanceText)
-                .font(.system(size: 27, weight: .bold, design: .rounded))
-                .monospacedDigit()
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
+                Text(state.headlineDistanceText)
+                    .font(.system(size: 25, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
 
-            HStack(alignment: .top, spacing: 8) {
+                Spacer(minLength: 4)
+
+                HStack(spacing: 10) {
+                    ForEach(Array(state.maneuvers.prefix(4).enumerated()), id: \.offset) { offset, maneuver in
+                        Image(systemName: maneuver.symbolName)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(offset == 0 ? TossWidgetColor.blue : Color.white.opacity(0.35))
+                            .accessibilityLabel(maneuver.title)
+                    }
+                }
+            }
+
+            HStack(spacing: 7) {
                 Image(systemName: state.leadingManeuver.symbolName)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(TossWidgetColor.blue)
-                    .frame(width: 22, height: 22)
+                    .frame(width: 20, height: 20)
                     .background(
                         TossWidgetColor.blue.opacity(0.2),
-                        in: RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: 6, style: .continuous)
                     )
 
-                // 안내 문구가 길면 글자를 뭉개는 대신 두 줄로 늘립니다.
+                // 확장형 전체 높이를 넘기지 않도록 한 줄에서 자연스럽게 축소합니다.
                 Text(state.instructionText ?? state.directionText)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.9)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .allowsTightening(true)
                     .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -176,17 +183,13 @@ private struct NavigationSummary: View {
                     .lineLimit(1)
                     .layoutPriority(1)
             }
-            .font(.system(size: 12))
+            .font(.system(size: 11))
             .foregroundStyle(.white.opacity(0.55))
             .padding(.horizontal, DynamicIslandMetrics.lastLineSideInset)
         }
-        // 아일랜드 바닥과 마지막 줄 사이를 벌립니다. 아일랜드가 그만큼 세로로 커집니다.
+        // 시스템의 기본 안전 여백을 유지한 채 바닥에 최소한의 호흡만 더합니다.
         .padding(.bottom, DynamicIslandMetrics.bottomBreathingRoom)
-        .frame(
-            maxWidth: .infinity,
-            minHeight: DynamicIslandMetrics.bottomMinHeight,
-            alignment: .topLeading
-        )
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
 
@@ -243,13 +246,21 @@ private struct LockScreenActivityView: View {
     }
 }
 
-/// Live Activity 타깃 전용 토스 블루 (앱 타깃의 TossColor와 동일한 값).
+/// Live Activity 타깃 전용 일렉트릭 블루 (앱 타깃의 TossColor와 동일한 값).
 enum TossWidgetColor {
     static let blue = Color(
         UIColor { trait in
             trait.userInterfaceStyle == .dark
-                ? UIColor(red: 0x4B / 255, green: 0x93 / 255, blue: 0xF8 / 255, alpha: 1)
-                : UIColor(red: 0x31 / 255, green: 0x82 / 255, blue: 0xF6 / 255, alpha: 1)
+                ? UIColor(red: 0x58 / 255, green: 0xC7 / 255, blue: 0xFF / 255, alpha: 1)
+                : UIColor(red: 0x24 / 255, green: 0x68 / 255, blue: 0xE8 / 255, alpha: 1)
+        }
+    )
+
+    static let background = Color(
+        UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 0x07 / 255, green: 0x0A / 255, blue: 0x0E / 255, alpha: 1)
+                : UIColor(red: 0xF3 / 255, green: 0xF7 / 255, blue: 0xFF / 255, alpha: 1)
         }
     )
 }

@@ -1,6 +1,6 @@
 //
 //  ProfileEditorView.swift
-//  FastMap
+//  CoFFMap
 //
 //  프로필 꾸미기. 사진(촬영 / 앨범)과 애플 이모지 아바타 중에서 고를 수 있습니다.
 //
@@ -85,7 +85,7 @@ struct ProfileEditorView: View {
                 .padding(.bottom, 120)
             }
             .scrollIndicators(.hidden)
-            .tossPageBackground()
+            .tossPageBackground(tone: .sunset)
             .safeAreaInset(edge: .bottom) { saveBar }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -100,7 +100,7 @@ struct ProfileEditorView: View {
                         .foregroundStyle(TossColor.textSecondary)
                 }
             }
-            .toolbarBackground(TossColor.background, for: .navigationBar)
+            .toolbarBackground(TossColor.background.opacity(0.88), for: .navigationBar)
             .toolbarBackgroundVisibility(.visible, for: .navigationBar)
             .fullScreenCover(isPresented: $isShowingCamera) {
                 CameraPicker(
@@ -137,6 +137,12 @@ struct ProfileEditorView: View {
                 photo: style == .photo ? pickedPhoto : nil,
                 size: 72
             )
+            .overlay {
+                Circle()
+                    .stroke(MusicGradient.warmAccent, lineWidth: 2.5)
+                    .padding(-3)
+            }
+            .shadow(color: TossColor.red.opacity(0.26), radius: 16, y: 6)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "이름 없음" : nickname)
@@ -151,6 +157,7 @@ struct ProfileEditorView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(TossSpacing.l)
+        .background(MusicGradient.softWarm, in: RoundedRectangle(cornerRadius: TossRadius.card, style: .continuous))
         .tossCard()
     }
 
@@ -163,7 +170,7 @@ struct ProfileEditorView: View {
             TextField("앱에서 보여줄 이름", text: $nickname)
                 .font(TossFont.body)
                 .foregroundStyle(TossColor.textPrimary)
-                .tint(TossColor.blue)
+                .tint(TossColor.red)
                 .focused($isNicknameFocused)
                 .submitLabel(.done)
                 .padding(.horizontal, TossSpacing.l)
@@ -186,7 +193,9 @@ struct ProfileEditorView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 40)
                         .background(
-                            style == option ? TossColor.fill : Color.clear,
+                            style == option
+                                ? AnyShapeStyle(MusicGradient.softWarm)
+                                : AnyShapeStyle(Color.clear),
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                         )
                 }
@@ -289,7 +298,7 @@ struct ProfileEditorView: View {
                 } label: {
                     Label("사진 찍기", systemImage: "camera.fill")
                 }
-                .buttonStyle(TossPrimaryButtonStyle())
+                .buttonStyle(TossPrimaryButtonStyle(accent: .warm))
             }
 
             PhotosPicker(selection: $photosItem, matching: .images, photoLibrary: .shared()) {
@@ -297,7 +306,7 @@ struct ProfileEditorView: View {
                     .font(TossFont.button)
                     .foregroundStyle(TossColor.textPrimary)
                     .frame(maxWidth: .infinity, minHeight: TossSize.ctaHeight)
-                    .background(TossColor.surfaceAlt, in: RoundedRectangle(cornerRadius: TossRadius.button, style: .continuous))
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: TossRadius.button, style: .continuous))
             }
 
             if pickedPhoto != nil || profileStore.photo != nil {
@@ -327,13 +336,13 @@ struct ProfileEditorView: View {
 
     private var saveBar: some View {
         Button("저장") { save() }
-            .buttonStyle(TossPrimaryButtonStyle())
+            .buttonStyle(TossPrimaryButtonStyle(accent: .warm))
             .padding(.horizontal, TossEdge.screenInset)
             .padding(.top, TossSpacing.m)
             .padding(.bottom, TossSpacing.s)
             .background {
                 Rectangle()
-                    .fill(TossColor.background)
+                    .fill(.ultraThinMaterial)
                     .ignoresSafeArea(edges: .bottom)
             }
     }
